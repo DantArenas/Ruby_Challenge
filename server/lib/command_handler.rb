@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
+# Meta Commands are to include yet
+
 class CommandHandler
 
-  def initialize(memcache)
-    @cache = memcache
-    puts 'Command Handler Initialize'
+  def initialize(memcached)
+    @cache = memcached
   end
 
   def split_line(command_line)
