@@ -30,7 +30,7 @@ class Server
   # ---------- Server main cicle (Adding Clients) ----------
 
   def wait_for_connections
-    tcp_Server = TCPServer.new('localhost', @port)
+    tcp_Server = TCPServer.new("127.0.0.1", @port)
     @memcached.clean_cache # to start with a clean storage
     client_handler = ClientHandler.new(@memcached)
     work_pool = Concurrent::FixedThreadPool.new(MAX_THREADS)
@@ -50,6 +50,7 @@ class Server
 
   def new_client_connection(tcp_Server, work_pool, client_handler)
     new_client = tcp_Server.accept
+    new_client.puts "Welcome"
     puts 'New Client Connected'
     work_pool.post do
       client_handler.handle_client(new_client, method(:remove_client))

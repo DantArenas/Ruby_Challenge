@@ -11,6 +11,7 @@ class ClientHandler
 
   def handle_client(socket, closing_callback)
     puts 'Handling new client'
+    socket.puts 'Hey, gimme a second'
     while line = socket.gets # While incoming data
       handle_line(socket, line)
     end
