@@ -13,14 +13,16 @@ require_relative 'client_handler.rb'
 # Class Server
 class Server
   MAX_THREADS = 20 # default 20
-  SERVER_VERSION = '0.0.2'.freeze
+  SERVER_VERSION = '0.0.3'.freeze
 
   def initialize(args)
     @port = args[:port]
-    @memcached = Memcached.new
-    @server_running = true
+    @tcp_Server = TCPServer.open("localhost", @port)
+
     @clients = []
     puts "Server Up and Running [PORT: #{@port}]"
+          puts "WAITING FOR REQUESTS"
+    run
   end
 
   trap 'SIGINT' do
@@ -29,61 +31,60 @@ class Server
 
   # ---------- Server main cicle (Adding Clients) ----------
 
-  def wait_for_connections
-    tcp_Server = TCPServer.new("127.0.0.1", @port)
-    @memcached.clean_cache # to start with a clean storage
-    client_handler = ClientHandler.new(@memcached)
-    work_pool = Concurrent::FixedThreadPool.new(MAX_THREADS)
+  def run
+    loop do
+      new_client = @tcp_Server.accept
+      client_handler = ClientHandler.new(id: @clients.length()+1, clientSocket: new_client)
+      @clients << client_handler
 
-    puts 'WAITING FOR REQUESTS...'
+      Thread.start(client_handler) do |handler| # open thread for each accepted connection
+        puts "New connection established! Now #{@clients.length()} clients :>"
+        puts "WAITING FOR REQUESTS"
+        handler.send("Server: Connection established with #{handler}")
+        handler.send("Server: You may introduce commands now")
+        listen_requests(handler) # allow communication
+      end
+    end.join
+  end
 
-    while @server_running
-      begin
-        new_client_connection(tcp_Server, work_pool, client_handler)
-      rescue Errno => e
-        # Could not connect with the client. Wait again.
-        puts 'No client, continuing'
-        next
+  def listen_requests(handler)
+    loop do
+      message = handler.listen
+      if message != nil && message != ""
+        if message.include? "close"
+          remove_client(handler)
+        elsif message.include? "clients"
+          handler.send("Server has #{@clients.length()} clients connected :D")
+        elsif message.include? "server -v"
+          handler.send("Your SERVER VERSION is #{SERVER_VERSION} ;)")
+        else
+          handler.manage_requests(message)
+        end
       end
     end
   end
 
-  def new_client_connection(tcp_Server, work_pool, client_handler)
-    new_client = tcp_Server.accept
-    new_client.puts "Welcome"
-    puts 'New Client Connected'
-    work_pool.post do
-      client_handler.handle_client(new_client, method(:remove_client))
-    end
-    @clients << new_client
-  end
+# ---------- Removigin Client Connections ----------
 
-  # ---------- Removigin Client Connections ----------
+def remove_client(handler)
+  handler.close_connection
+  # TODO check that only deletes the specific socket.
+  @clients.delete(handler)
+  puts "Removed Client. #{@clients.length()} connections remaining"
+end
 
-  def self.remove_client(client_socket_to_remove)
-    client_socket_to_remove.close
-    puts 'Removing Client'
-    # TODO check that only delet the specific socket.
-    @clients.delete(client_socket_to_remove)
+def self.close_all_clients_connections
+  if @clients != nil #TODO, clients is reading as null
+    @clients.each {|c| c.close_connection}
   end
+end
 
-  def self.close_all_clients_connections
-    num_connections = 0
-    if @clients != nil && @clients.length() > 0
-      @clients.each do |c|
-        c.close
-        n+=1
-      end
-    end
-    puts "CLOSED #{num_connections} CLIENT CONNECTIONS"
-  end
-
-  def self.close_server
-    puts 'Closing all Connections'
-    close_all_clients_connections
-    puts 'Closing Server'
-    exit 130
-  end
+def self.close_server
+  puts 'Closing all Connections'
+  close_all_clients_connections
+  puts 'Closing Server'
+  exit 0
+end
 
   # ---------- MEMCACHED RELATED METHODS ----------
 
@@ -99,17 +100,15 @@ class Server
     #TODO
   end
 
-  def quit(socket)
-    remove_client(socket)
-  end
+#  def quit(socket)
+#    remove_client(socket)
+#  end
 
-end
+end # Class Server
 
 # ===================================================
 # ===           HERE WE LAUNCH THE SERVER         ===
 # ===================================================
 
-port = 9100 # default 3000
-
+port = 8080 # default 3000
 my_memcached_server = Server.new(port: port)
-my_memcached_server.wait_for_connections
