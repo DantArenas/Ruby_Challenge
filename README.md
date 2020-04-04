@@ -46,15 +46,18 @@ After that, every time you type into the Terminal, you will receive an answer fr
 Write your command
 ```
 
-To **close** the client connection you con type in the word "*close*", just like that. If you finish the execution of the client, it will also notify the server, so it can close that connection and free up processing for a new client.
+To **close** the client connection you can type in the word "*close*", just like that. If you finish the execution of the client, it will also notify the server, so it can close that connection and free up processing for a new client.
 
 ## Available commands
 
 Next, a list of all commands available to the moment of this commit.
 
-##### Clients (command: "clients")
+### Server Commands
+#### Clients (command: "clients")
 Response with the number of clients connected to the server.
-##### Server Version (command: "server -v")
+#### Server Version (command: "server -v")
 Response with the version of the server.
-##### Close (command: "close")
+#### Close (command: "close")
 Notifies and closes communication with the server. Also finishes the client execution.
+#### Salute (command: "hello")
+Literally a salute protocol, because of manners matters. Say hello to the server, and it will respond accordingly!

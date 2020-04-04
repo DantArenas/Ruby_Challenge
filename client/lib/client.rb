@@ -18,6 +18,8 @@ class Client
     exit 100 # Bad Way
   end
 
+  # -------------- SEND MESSAGES TO SERVER--------------
+
   def send_connection_request
     begin
       Thread.new do
@@ -31,6 +33,8 @@ class Client
       @socket.close
     end
   end
+
+  # ------------ RECEIVE MESSAGES FROM SERVER ------------
 
   def listen_server
     begin
@@ -53,11 +57,17 @@ class Client
       close_client
     elsif message.include? "Server:"
       puts message
+    elsif message.include? "Server Says:"
+      puts message
+      puts "You answered: I'm fine, thanks! How are you?"
+      @socket.puts "I'm fine, thanks! How are you?"
     else
       puts message
       puts 'Write your command'
     end
   end
+
+  # ------------ CLOSE CONNECTION WITH SERVER ------------
 
   def close_client
     print 'Clossing Connection... '

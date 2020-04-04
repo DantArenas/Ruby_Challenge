@@ -47,6 +47,7 @@ class Server
     end.join
   end
 
+  # This method only handles request to the server
   def listen_requests(handler)
     loop do
       message = handler.listen
@@ -57,7 +58,7 @@ class Server
           handler.send("Server has #{@clients.length()} clients connected :D")
         elsif message.include? "server -v"
           handler.send("Your SERVER VERSION is #{SERVER_VERSION} ;)")
-        else
+        else # isn't a server request, let the client handler manage it
           handler.manage_requests(message)
         end
       end

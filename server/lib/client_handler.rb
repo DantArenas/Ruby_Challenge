@@ -32,7 +32,7 @@ class ClientHandler
 
   def manage_requests (message)
     # We're just checking the command Handler
-    @command_handler.split_line(message)
+    @command_handler.split_command(message)
     # TODO we must check if message has a command
     # if the message is a command, we should send it to command handler.
     # command habdler will decide what to do and manage memcached
