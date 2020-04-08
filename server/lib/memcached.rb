@@ -3,12 +3,16 @@
 
 require 'concurrent-ruby'
 
+require_relative './models/cache_storage_result.rb'
+
 # Class Memcached
 class Memcached
 
+  MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND' }.freeze
+
   def initialize
     @hash_storage = Concurrent::Hash.new
-    @unique_value = 1 # TODO
+    @cas_value = 2**32 # CAS = Check And Set
     @cleaning_cache = false
   end
 
@@ -16,16 +20,36 @@ class Memcached
   # ===         MEMCACHED PROTOCOL METHODS          ===
   # ===================================================
 
+  # ---         MEMCACHED RETRIEVAL METHODS          ---
+
   def get(key)
     cache
   end
 
-  def set
+  def gets(key)
+    cache
+  end
+
+  # ---         MEMCACHED STORAGE METHODS          ---
+
+  def cas
     # TODO
   end
 
-  def add
-    # TODO
+  def set(key, data, flags, exp_time)
+    cas_unique = next_cas_val # get cas value and increment by 1
+    entry = CacheData.new(key: key, data: data, flags: flags, exp_time: exp_time, cas_unique: cas_unique)
+    @hash_storage[key] = entry
+    CacheStorageResult.new(success: true, message: MESSAGES[:stored], entry: entry)
+  end
+
+  def add(key, data, flags, exp_time)
+    if !exists?(key)
+      set(key, data, flags, exp_time)
+    else
+     # Couldn't add, key already exists
+     puts "Key #{key} is already stored"
+    end
   end
 
   def replace
@@ -54,6 +78,17 @@ class Memcached
 
   def flush_all(args)
       seconds = args[:seconds]
+  end
+
+  # ===================================================
+  # ===            USEFUL METHODS             ===
+  # ===================================================
+
+  # returns cas value and increment it by 1
+  def next_cas_val
+    val = @cas_value
+    @cas_value += 1
+    val
   end
 
   # ===================================================

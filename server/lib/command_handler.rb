@@ -6,6 +6,7 @@ class CommandHandler
 
   STORAGE_COMMANDS = %w[set add replace append prepend cas].freeze
   RETRIEVAL_COMMANDS = %w[get gets hello].freeze
+  MESSAGE = {error: 'ERROR'} # syntax error
 
   def initialize(memcached, client_socket)
     @cache = memcached
