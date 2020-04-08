@@ -8,7 +8,7 @@ require_relative './models/cache_storage_result.rb'
 # Class Memcached
 class Memcached
 
-  MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND' }.freeze
+  MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
 
   def initialize
     @hash_storage = Concurrent::Hash.new
@@ -23,11 +23,16 @@ class Memcached
   # ---         MEMCACHED RETRIEVAL METHODS          ---
 
   def get(key)
-    cache
+    if valid_for_retrieval?(key)
+      entry = @hash_storage[key]
+      CacheRetrievalResult.new(success: true, message: MESSAGES[:found], cache_entries: entry)
+    else
+      CacheStorageResult.new(success: false, message: MESSAGES[:not_found], cache_entries: nil)
+    end
   end
 
-  def gets(key)
-    cache
+  def gets(keys)
+    ## TODO: multiple gets with multiple keys
   end
 
   # ---         MEMCACHED STORAGE METHODS          ---
@@ -40,7 +45,7 @@ class Memcached
     cas_unique = next_cas_val # get cas value and increment by 1
     entry = CacheData.new(key: key, data: data, flags: flags, exp_time: exp_time, cas_unique: cas_unique)
     @hash_storage[key] = entry
-    CacheStorageResult.new(success: true, message: MESSAGES[:stored], entry: entry)
+    CacheStorageResult.new(success: true, message: MESSAGES[:stored], cache_entry: entry)
   end
 
   def add(key, data, flags, exp_time)
@@ -48,6 +53,7 @@ class Memcached
       set(key, data, flags, exp_time)
     else
      # Couldn't add, key already exists
+     CacheStorageResult.new(success: false, message: MESSAGES[:exists], cache_entry: nil)
      puts "Key #{key} is already stored"
     end
   end
@@ -106,10 +112,25 @@ class Memcached
     expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now
   end
 
+  # Use this method to find if it's a valid key for retrieval
+  def valid_for_retrieval?(key)
+    cache = @hash_storage[key]
+    if exists?(key) && !cache.nil?
+      return true
+    elsif !cache.nil? && expired?(key)
+      remove_entry(key)
+      return false
+    end
+  end
 
   # ===================================================
   # ===            REMOVE CACHE METHODS             ===
   # ===================================================
+
+ # Removes specific cache entry by key
+  def remove_entry(key)
+    @hash_storage.delete(key)
+  end
 
   def clean_cache
     unless @hash_storage.empty? && @cleaning_cache
