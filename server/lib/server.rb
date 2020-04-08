@@ -18,6 +18,7 @@ class Server
   def initialize(args)
     @port = args[:port]
     @tcp_Server = TCPServer.open("localhost", @port)
+    @memcached = Memcached.new
 
     @clients = []
     puts "Server Up and Running [PORT: #{@port}]"
@@ -34,7 +35,7 @@ class Server
   def run
     loop do
       new_client = @tcp_Server.accept
-      client_handler = ClientHandler.new(id: @clients.length()+1, clientSocket: new_client)
+      client_handler = ClientHandler.new(id: @clients.length()+1, clientSocket: new_client, memcached: @memcached)
       @clients << client_handler
 
       Thread.start(client_handler) do |handler| # open thread for each accepted connection

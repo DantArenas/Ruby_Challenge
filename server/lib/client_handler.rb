@@ -9,11 +9,9 @@ class ClientHandler
   def initialize(args)
     @id = args[:id]
     @client_socket = args[:clientSocket]
+    @memcached = args[:memcached]
     @running = true
-
     # puts "New Client Handler. Id: #{@id}"
-    # Memcached only needed as argumt to initialize command handler
-    @memcached = Memcached.new
     @command_handler = CommandHandler.new(@memcached, @client_socket)
   end
 
@@ -32,17 +30,19 @@ class ClientHandler
 
   def manage_requests (message)
     # We're just checking the command Handler
-    @command_handler.split_command(message)
-    # TODO we must check if message has a command
-    # if the message is a command, we should send it to command handler.
-    # command habdler will decide what to do and manage memcached
+    response = @command_handler.split_command(message) # It's a commnad_response
+    send(response)
   end
 
 # ----------  SENDING MESSAGES ----------
 
-def send (string)
+def send(response)
   if @running
-    @client_socket.puts string
+    if response.cache_result != nil
+      ## TODO: Send full response
+    else
+      @client_socket.puts response.message
+    end
   end
 end
 

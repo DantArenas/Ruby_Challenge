@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-
 # Meta Commands are to include yet
+
+include_relative './models/command_response'
 
 class CommandHandler
 
@@ -8,9 +9,8 @@ class CommandHandler
   RETRIEVAL_COMMANDS = %w[get gets hello].freeze
   MESSAGE = {error: 'ERROR'} # syntax error
 
-  def initialize(memcached, client_socket)
+  def initialize(memcached)
     @cache = memcached
-    @client_socket = client_socket
   end
 
  # Here we verify the command structure
@@ -19,6 +19,7 @@ class CommandHandler
     command = parts[0] # first part must be the command
     parts.delete_at(0) # removes the command from the line
 
+    # All 'manage' methods return a command_response object
     if is_retrieval?(command)  # Is Retrieval Request?
       manage_retrieval(command, parts)
     elsif is_storage?(command) # Is Storage Request?
@@ -35,7 +36,8 @@ class CommandHandler
 
   def manage_storage(command, args)
     ## TODO: Verify  the command is complete and includes necessary data
-    @client_socket.puts "Soon we'll manage your storage request"
+    CommandResponse.new(message: "Soon we'll manage your storage request", cahce_result: nil)
+    ## TODO: puts
   end
 
   def manage_retrieval(command, args)
@@ -43,7 +45,8 @@ class CommandHandler
     if command.eql? 'hello'
       salute
     else
-      @client_socket.puts "Soon we'll manage your retieval request"
+      CommandResponse.new(message: "Soon we'll manage your retieval request", cahce_result: nil)
+      ## TODO: puts
     end
   end
 
@@ -54,14 +57,14 @@ class CommandHandler
   def manage_no_command(line)
     # TODO list the expected commands and their function
     if line.include? "fine"
-      @client_socket.puts "Server Responded: Great! Then, how can I help you?"
+      CommandResponse.new(message: 'Server Responded: Great! Then, how can I help you?', cahce_result: nil)
     else
-      @client_socket.puts "-'#{line}'- isn't a command"
+      CommandResponse.new(message: "-'#{line}'- isn't a command", cahce_result: nil)
     end
   end
 
   def salute
-    @client_socket.puts "Server Says: Hey There! How are you?"
+    CommandResponse.new(message: 'Server Says: Hey There! How are you?', cahce_result: nil)
   end
 
   # ----------------------------------------------------------------

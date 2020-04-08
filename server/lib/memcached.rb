@@ -4,6 +4,7 @@
 require 'concurrent-ruby'
 
 require_relative './models/cache_storage_result.rb'
+require_relative './models/cache_retrieval_result.rb'
 
 # Class Memcached
 class Memcached
@@ -44,7 +45,7 @@ class Memcached
   def set(key, data, flags, exp_time)
     cas_unique = next_cas_val # get cas value and increment by 1
     entry = CacheData.new(key: key, data: data, flags: flags, exp_time: exp_time, cas_unique: cas_unique)
-    @hash_storage[key] = entry
+    @hash_storage[key] = entry # add cache data to the storage
     CacheStorageResult.new(success: true, message: MESSAGES[:stored], cache_entry: entry)
   end
 
