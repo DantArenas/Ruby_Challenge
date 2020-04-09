@@ -24,7 +24,7 @@ class ClientHandler
       end
     rescue
       puts "The client #{@id} has disconnected"
-      mensaje = 'close'
+      mensaje = 'close' # this will trigger the remove client protocol in the server
     end
   end
 

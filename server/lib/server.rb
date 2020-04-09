@@ -53,11 +53,12 @@ class Server
     loop do
       message = handler.listen
       if message != nil && message != ""
-        if message.include? "close"
+        command = message.split("\s")[0]
+        if command.include? "close"
           remove_client(handler)
-        elsif message.include? "clients"
+        elsif command.include? "clients"
           handler.send("Server has #{@clients.length()} clients connected :D")
-        elsif message.include? "server -v"
+        elsif command.include? "server -v"
           handler.send("Your SERVER VERSION is #{SERVER_VERSION} ;)")
         else # isn't a server request, let the client handler manage it
           handler.manage_requests(message)
