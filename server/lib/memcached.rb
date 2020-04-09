@@ -102,6 +102,11 @@ class Memcached
   # ===            CACHE STATUS METHODS             ===
   # ===================================================
 
+  # true if hash storage has the specified key stored
+  def stored?(key)
+    @hash_storage.key?(key)
+  end
+
   # true if the key is stored and has not expired
   def exists?(key)
     @hash_storage.key?(key) && (@hash_storage[key].exp_time.nil? || @hash_storage[key].exp_time > Time.now)
