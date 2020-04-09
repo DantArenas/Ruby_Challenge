@@ -12,7 +12,7 @@ class ClientHandler
     @memcached = args[:memcached]
     @running = true
     # puts "New Client Handler. Id: #{@id}"
-    @command_handler = CommandHandler.new(@memcached, @client_socket)
+    @command_handler = CommandHandler.new(@memcached)
   end
 
   # ----------  RECEVING MESSAGES ----------
@@ -31,20 +31,24 @@ class ClientHandler
   def manage_requests (message)
     # We're just checking the command Handler
     response = @command_handler.split_command(message) # It's a commnad_response
-    send(response)
+    send_response(response)
   end
 
 # ----------  SENDING MESSAGES ----------
 
-def send(response)
-  if @running
-    if response.cache_result != nil
-      ## TODO: Send full response
-    else
-      @client_socket.puts response.message
+  def send(string)
+    @client_socket.puts string
+  end
+
+  def send_response(response)
+    if @running
+      if response.cache_result != nil
+        ## TODO: Send full response
+      else
+        @client_socket.puts response.message
+      end
     end
   end
-end
 
 # ----------  CLOSE THIS CLIENT CONNECTION ----------
   def close_connection

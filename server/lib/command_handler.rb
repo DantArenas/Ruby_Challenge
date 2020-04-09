@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 # Meta Commands are to include yet
 
-include_relative './models/command_response'
+require_relative './models/command_response.rb'
 
 class CommandHandler
 

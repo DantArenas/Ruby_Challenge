@@ -7,4 +7,8 @@ class CommandResponse
     @message = args[:message]
     @cache_result = args[:cache_result]
   end
+
+  def cache_result
+    @cache_result
+  end
 end
