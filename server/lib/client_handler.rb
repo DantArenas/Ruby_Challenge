@@ -30,8 +30,10 @@ class ClientHandler
 
   def manage_requests (message)
     # We're just checking the command Handler
-    response = @command_handler.split_command(message) # It's a commnad_response
-    send_response(response)
+    parsed_command = @command_handler.split_command(message) # It's a commnad_response
+
+
+    send_response(parsed_command)
   end
 
 # ----------  SENDING MESSAGES ----------
@@ -42,7 +44,7 @@ class ClientHandler
 
   def send_response(response)
     if @running
-      if response.cache_result != nil
+      if response.args != nil
         ## TODO: Send full response
       else
         @client_socket.puts response.message
