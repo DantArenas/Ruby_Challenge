@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
 class CommandResponse
-  attr_reader :message, :cache_result
+  attr_reader :success, :message, :cache_result
 
-  def initialize(args)
-    @message = args[:message]
-    @cache_result = args[:cache_result]
-  end
-
-  def cache_result
-    @cache_result
+  def initialize(success, message, cache_result)
+    @success = success
+    @message = message
+    @cache_result = cache_result
   end
 end
