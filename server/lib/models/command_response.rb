@@ -3,7 +3,7 @@
 class CommandResponse
   attr_reader :success, :message, :args
 
-  def initialize(success, message, cache_result)
+  def initialize(success, message, args)
     @success = success
     @message = message
     @args = args
