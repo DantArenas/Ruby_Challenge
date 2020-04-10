@@ -182,15 +182,19 @@ class CommandHandler
      end
    end
 
-  def manage_storage(command, args)
-    if command.eql? 'add'
+  def manage_storage(command, args, data) ## TODO: add data
+
+    ## TODO data.length should fit args.bytes
+
+    case commands
+    when 'add'
       ## TODO: CONNECTING MEMCACHED METHODS
       message_part1 = "Line ==> command:#{command} "
       message_part2 = ("key:#{args[:key]} flags:#{args[:flags]} exp_time:#{args[:exp_time]}")
       message_part3 = ("bytes:#{args[:bytes]} noreply:#{args[:noreply]}")
       message       = message_part1 + message_part2 + message_part3
       CommandResponse.new(false, message, nil)
-    elsif command.eql? 'cas'
+    when 'cas'
       ## TODO: CONNECTING MEMCACHED METHODS
       message = "Line ==> #{args}"
       CommandResponse.new(false, message, nil)
@@ -204,9 +208,11 @@ class CommandHandler
 
   def manage_retrieval(command, args)
     ## TODO: Answer the Request
-    if    command.eql? 'hello'
+
+    case command
+    when 'hello'
       salute
-    elsif command.eql? 'get'
+    when 'get'
       #@cache.get(args) ## TODO: CONNECTING MEMCACHED METHODS
       message_part1 = "Line ==> command:#{command} "
       message_part2 = "key: #{args[:key]} noreply: #{args[:noreply]}"
@@ -218,6 +224,7 @@ class CommandHandler
       message       = message_part1 + message_part2
       CommandResponse.new(false, message, nil)
     end
+
   end
 
   # ----------------------------------------------------------------
