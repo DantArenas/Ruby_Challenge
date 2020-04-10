@@ -5,11 +5,12 @@ require_relative './models/command_response.rb'
 
 class CommandHandler
 
-  STORAGE_COMMANDS = %w[set add replace append prepend incr decr cas].freeze
-  RETRIEVAL_COMMANDS = %w[get gets delete flush_all stats hello].freeze
-  FLAGS = %w[].freeze ## TODO: implement protocl flags
-  MESSAGE = {error: 'ERROR', client_error: 'CLIENT_ERROR', server_error: 'SERVER_ERROR'}.freeze
-  MY_MESSAGE = {not_command: 'NOT_COMMAND', not_enough_args: 'NOT_ENOUGH_ARGS', invalid_key: 'INVALID_KEY'}.freeze
+  STORAGE_COMMANDS   = %w[set add replace append prepend incr decr cas].freeze
+  RETRIEVAL_COMMANDS = %w[get gets delete flush_all stats hello].freeze # quit managed in server requests
+  FLAGS              = %w[].freeze ## TODO: implement flags protocol
+  STATS              = %w[slabs malloc items detail sizes reset].freeze ## TODO: implement stats retrieval
+  MESSAGE            = {error: 'ERROR', client_error: 'CLIENT_ERROR', server_error: 'SERVER_ERROR'}.freeze
+  MY_MESSAGE         = {not_command: 'NOT_COMMAND', not_enough_args: 'NOT_ENOUGH_ARGS', invalid_key: 'INVALID_KEY'}.freeze
 
   def initialize(memcached)
     @cache = memcached
@@ -17,13 +18,13 @@ class CommandHandler
 
  # Here we verify the command structure
   def split_command(command_line)
-    parts = command_line.split("\s")
+    parts   = command_line.split("\s")
     command = parts[0] # first part must be the command
     parts.delete_at(0) # removes the command from the parts list
 
     # All 'manage' methods return a command_response object
     if is_retrieval?(command)  # Is Retrieval Request?
-      manage_retrieval(command, parts)
+      parse_retrieval(command, parts)
     elsif is_storage?(command) # Is Storage Request?
       parse_storage(command, parts)
     else                       # Is not a command
@@ -44,7 +45,7 @@ class CommandHandler
     end
 
     # Here is the command line structure
-    # NOTE: 'noreplay' may be included, adding 1 more "argument"
+    # NOTE: 'noreply' may be included, adding 1 more "argument"
     # <incr decr> key amaunt
     # <set add replace append prepend> key flags exp_time bytes(data length) + data
     # <cas> key flags exp_time bytes(data length) cas_unique  + data
@@ -54,13 +55,13 @@ class CommandHandler
        return CommandResponse.new(false, "#{MY_MESSAGE[:invalid_key]}: Key is not valid", nil)
      end
 
-     noreplay = parts[2] == 'noreplay' || parts[4] == 'noreplay' || parts[5] == 'noreplay'
+     noreply = parts[2] == 'noreply' || parts[4] == 'noreply'  || parts[5] == 'noreply'
      # true or false. 'noreply' should be the last arg every time
 
-     if valid_args_count?(parts, 4, 6) # key + 3 args more + cas + noreplay (optional)
-       flags = parts[1]
+     if valid_args_count?(parts, 4, 6) # key + 3 args more + cas + noreply (optional)
+       flags    = parts[1]
        exp_time = parts[2]
-       bytes = parts[3]
+       bytes    = parts[3]
 
        # lets check if the command args were send properly. Checking as cascade
        if !valid_flags?(flags)
@@ -69,29 +70,97 @@ class CommandHandler
          return respond_invalid("#{MESSAGE[:client_error]} Expiration time is not valid")
        elsif !is_unsigned_int(bytes)
          return respond_invalid("#{MESSAGE[:client_error]} Bytes are not valid")
-       elsif command == 'cas' && is_unsigned_int(parts[4])
+       elsif command == 'cas' && !is_unsigned_int(parts[4])
          return respond_invalid("#{MESSAGE[:client_error]} CAS unique value is not valid")
        end
 
-       args = { command: command, key: key, flags: flags, exp_time: generate_TTL(exp_time), bytes: Integer(bytes), noreplay: noreplay }
+       args = { command: command, key: key, flags: flags, exp_time: generate_TTL(exp_time), bytes: Integer(bytes), noreply: noreply }
        args[:cas_unique] = Integer(parts[4]) if command == 'cas'
        CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
 
-     elsif valid_args_count?(parts, 2, 3) # incr and decr: key + amaunt + noreplay (optional)
+     elsif valid_args_count?(parts, 2, 3) # incr and decr: key + amaunt + noreply (optional)
        amaunt = parts[1]
 
        if !is_unsigned_int(amaunt)
          return respond_invalid("#{MESSAGE[:client_error]} Amaunt is not valid")
        end
 
-       args = { command: command, key: key, amaunt: amaunt, noreplay: noreplay}
+       args = { command: command, key: key, amaunt: amaunt, noreply: noreply}
        CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
 
      else # not valid args. Don't continue
-       return CommandResponse.new(false, "#{MESSAGE[:not_enough_args]}: Invalid args count", nil)
+       return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid args count", nil)
      end
       ## TODO: Verify  the command is complete and includes necessary data
-  end
+  end # parse stroage args
+
+  def parse_retrieval(command, parts)
+
+    # Here is the command line structure
+    # NOTE: 'noreply' may be included, adding 1 more "argument"
+    # <hello flush_all stats> NO_ARGUMENTS
+    # <get delete> key
+    # <flush_all(time) || stats(flag)> time_to_flush || stats_flag(slabs, malloc, items, detail, sizes, reset)
+    # <gets> multiple_keys
+
+    if command == 'gets' # gets can have different number of keys
+      if parts.length > 0
+        noreply = parts[0].include?('noreply')
+
+        if noreply
+          parts.delete_at(0) # drop noreply keep keys
+        end
+
+        parts.each do |key| # looks for invalid keys
+          unless valid_key?(key)
+            return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid key '#{key}'", args)
+          end
+        end
+
+        args = { command: command, noreply: noreply, keys: parts }
+        return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+
+      else
+        return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Missing keys", nil)
+      end
+    end
+
+    if valid_args_count?(parts, 0, 1) && (command == 'hello' || command == 'flush_all' || command == 'stats')
+        noreply = false
+        noreply = parts[0] .include?('noreply') if parts.length > 0
+        args    = { command: command, noreply: noreply}
+        CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+
+    elsif valid_args_count?(parts, 1, 2)             # get delete flush_all(time) stats(flag)
+
+      noreply = false
+      noreply = parts[1] .include?('noreply') if parts.length > 1
+      if command == 'get' || command == 'delete' # get delete
+        key = parts[0]
+        unless key.length> 0 && valid_key?(key)
+          return respond_invalid("#{MESSAGE[:client_error]}: Invalid key")
+        end
+        args = { command: command, key: key, noreply: noreply}
+      elsif command == 'flush_all'  # flush_all(time)
+        flush_time = parts[0]
+        unless is_unsigned_int?(flush_time)
+          return respond_invalid("#{MESSAGE[:client_error]}: Invalid flush time")
+        end
+        args = { command: command, flush_time: flush_time, noreply: noreply}
+      elsif command == 'stats'      # stats(flag)
+        stats_flag = parts[0]
+        unless stats_flag.length > 0
+          return respond_invalid("#{MESSAGE[:client_error]}: Invalid stats flag")
+        end
+        args = { command: command, stats_flag: stats_flag, noreply: noreply}
+      end
+
+      CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+
+    else                                 # invalid number of args
+      return respond_invalid("#{MESSAGE[:client_error]}: Invalid args count")
+    end
+  end # parse retrieval args
 
   # ----------------------------------------------------------------
   # ---                     MANAGE REQUESTS                      ---
@@ -117,24 +186,37 @@ class CommandHandler
     if command.eql? 'add'
       ## TODO: CONNECTING MEMCACHED METHODS
       message_part1 = "Line ==> command:#{command} "
-      message_part2 =("key:#{args[:key]} flags:#{args[:flags]} exp_time:#{args[:exp_time]}")
-      message_part3 =("bytes:#{args[:bytes]} noreplay:#{args[:noreplay]}")
-
-      message = message_part1 + message_part2 + message_part3
+      message_part2 = ("key:#{args[:key]} flags:#{args[:flags]} exp_time:#{args[:exp_time]}")
+      message_part3 = ("bytes:#{args[:bytes]} noreply:#{args[:noreply]}")
+      message       = message_part1 + message_part2 + message_part3
+      CommandResponse.new(false, message, nil)
+    elsif command.eql? 'cas'
+      ## TODO: CONNECTING MEMCACHED METHODS
+      message = "Line ==> #{args}"
       CommandResponse.new(false, message, nil)
     else
-      CommandResponse.new(false,  "Soon we'll manage your storage request", nil)
+      message_part1 = "Soon we'll manage your storage request ==> "
+      message_part2 = "#{args}"
+      message       = message_part1 + message_part2
+      CommandResponse.new(false, message, nil)
     end
   end
 
   def manage_retrieval(command, args)
     ## TODO: Answer the Request
-    if command.eql? 'hello'
+    if    command.eql? 'hello'
       salute
     elsif command.eql? 'get'
       #@cache.get(args) ## TODO: CONNECTING MEMCACHED METHODS
+      message_part1 = "Line ==> command:#{command} "
+      message_part2 = "key: #{args[:key]} noreply: #{args[:noreply]}"
+      message       = message_part1 + message_part2
+      CommandResponse.new(false, message, nil)
     else
-      CommandResponse.new(false,  "Soon we'll manage your retieval request", nil)
+      message_part1 = "Soon we'll manage your retrieval request ==> "
+      message_part2 = "#{args}"
+      message       = message_part1 + message_part2
+      CommandResponse.new(false, message, nil)
     end
   end
 
@@ -174,8 +256,8 @@ class CommandHandler
   def valid_key?(key)
     # protocol specifies keys no longer than 250 characters
     # and keys must not include control characters or whitespace
-    special = "?<>',?[]}{=-)(*&^%$#`~{}"
-    regex = /[#{special.gsub(/./){|char| "\\#{char}"}}]/
+    special = "?<>',?[]}{=-)(*&^%$#`~{}|°@"
+    regex   = /[#{special.gsub(/./){|char| "\\#{char}"}}]/
     return key.length() <= 250 && (key =~ regex).nil?
   end
 
