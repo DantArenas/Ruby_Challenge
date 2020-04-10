@@ -31,9 +31,13 @@ class ClientHandler
   def manage_requests (message)
     # We're just checking the command Handler
     parsed_command = @command_handler.split_command(message) # It's a commnad_response
+    if parsed_command.success
+      response = @command_handler.manage_request(parsed_command.args)
+      send_response(response)
+    else
+      send_response(parsed_command)
+    end
 
-
-    send_response(parsed_command)
   end
 
 # ----------  SENDING MESSAGES ----------
