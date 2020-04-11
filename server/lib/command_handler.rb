@@ -6,7 +6,7 @@ require_relative './models/command_response.rb'
 class CommandHandler
 
   STORAGE_COMMANDS   = %w[set add replace append prepend incr decr cas].freeze
-  RETRIEVAL_COMMANDS = %w[get gets delete flush_all stats hello].freeze # quit managed in server requests
+  RETRIEVAL_COMMANDS = %w[get gets  get_all delete flush_all stats hello].freeze # quit managed in server requests
   FLAGS              = %w[].freeze ## TODO: implement flags protocol
   STATS              = %w[slabs malloc items detail sizes reset].freeze ## TODO: implement stats retrieval
   MESSAGE            = {error: 'ERROR', client_error: 'CLIENT_ERROR', server_error: 'SERVER_ERROR'}.freeze
@@ -66,27 +66,27 @@ class CommandHandler
        # lets check if the command args were send properly. Checking as cascade
        if !valid_flags?(flags)
          return respond_invalid("#{MESSAGE[:client_error]} Flags are not valid")
-       elsif !is_unsigned_int(exp_time)
+       elsif !is_unsigned_int?(exp_time)
          return respond_invalid("#{MESSAGE[:client_error]} Expiration time is not valid")
-       elsif !is_unsigned_int(bytes)
+       elsif !is_unsigned_int?(bytes)
          return respond_invalid("#{MESSAGE[:client_error]} Bytes are not valid")
-       elsif command == 'cas' && !is_unsigned_int(parts[4])
+       elsif command == 'cas' && !is_unsigned_int?(parts[4])
          return respond_invalid("#{MESSAGE[:client_error]} CAS unique value is not valid")
        end
 
        args = { command: command, key: key, flags: flags, exp_time: generate_TTL(exp_time), bytes: Integer(bytes), noreply: noreply }
        args[:cas_unique] = Integer(parts[4]) if command == 'cas'
-       CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
+       return CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
 
      elsif valid_args_count?(parts, 2, 3) # incr and decr: key + amaunt + noreply (optional)
        amaunt = parts[1]
 
-       if !is_unsigned_int(amaunt)
+       if !is_unsigned_int?(amaunt)
          return respond_invalid("#{MESSAGE[:client_error]} Amaunt is not valid")
        end
 
        args = { command: command, key: key, amaunt: amaunt, noreply: noreply}
-       CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
+       return CommandResponse.new(true, "STORED_ARGS_OBTAINED", args)
 
      else # not valid args. Don't continue
        return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid args count", nil)
@@ -120,41 +120,41 @@ class CommandHandler
       else
         return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Missing keys", nil)
       end
-    end
-
-    if valid_args_count?(parts, 0, 1) && (command == 'hello' || command == 'flush_all' || command == 'stats')
-        noreply = false
-        noreply = parts[0] .include?('noreply') if parts.length > 0
-        args    = { command: command, noreply: noreply}
-        CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
-
-    elsif valid_args_count?(parts, 1, 2)             # get delete flush_all(time) stats(flag)
-
-      noreply = false
-      noreply = parts[1] .include?('noreply') if parts.length > 1
-      if command == 'get' || command == 'delete' # get delete
-        key = parts[0]
-        unless key.length> 0 && valid_key?(key)
-          return respond_invalid("#{MESSAGE[:client_error]}: Invalid key")
-        end
-        args = { command: command, key: key, noreply: noreply}
-      elsif command == 'flush_all'  # flush_all(time)
+    elsif command == 'flush_all'  # flush_all & flush_all(time)
         flush_time = parts[0]
-        unless is_unsigned_int?(flush_time)
+        if  flush_time!= nil && !is_unsigned_int?(flush_time)
           return respond_invalid("#{MESSAGE[:client_error]}: Invalid flush time")
         end
-        args = { command: command, flush_time: flush_time, noreply: noreply}
-      elsif command == 'stats'      # stats(flag)
+        args = { command: command, seconds: flush_time, noreply: noreply}
+        return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+    elsif command == 'stats'      # stats(flag)
         stats_flag = parts[0]
         unless stats_flag.length > 0
           return respond_invalid("#{MESSAGE[:client_error]}: Invalid stats flag")
         end
         args = { command: command, stats_flag: stats_flag, noreply: noreply}
+        return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+    end
+
+    if valid_args_count?(parts, 0, 1) && (command == 'hello' || command == 'get_all' || command == 'stats')
+        noreply = false
+        noreply = parts[0] .include?('noreply') if parts.length > 0
+        args    = { command: command, noreply: noreply}
+        return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
+
+    elsif valid_args_count?(parts, 1, 2) # get delete
+      noreply = false
+      noreply = parts[1] .include?('noreply') if parts.length > 1
+      if command == 'get' || command == 'delete' || command == 'get_all'
+        key = parts[0]
+        unless key.length> 0 && valid_key?(key)
+          return respond_invalid("#{MESSAGE[:client_error]}: Invalid key")
+        end
+        args = { command: command, key: key, noreply: noreply}
       end
+      return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
 
-      CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
-
-    else                                 # invalid number of args
+    else # invalid number of args
       return respond_invalid("#{MESSAGE[:client_error]}: Invalid args count")
     end
   end # parse retrieval args
@@ -197,8 +197,7 @@ class CommandHandler
   end
 
   def manage_retrieval(command, args)
-    ## TODO: gets delete flush_all stats hello
-
+    ## TODO: stats
     case command
     when 'hello'
       salute
@@ -206,6 +205,13 @@ class CommandHandler
       result = @cache.get(args[:key])
     when 'gets'
       result = @cache.gets(args[:keys])
+    when 'get_all'
+      result = @cache.get_all
+    when 'delete'
+      result = @cache.delete(args[:key])
+    when 'flush_all'
+      seconds = args[:seconds]
+      result = seconds != nil ? @cache.flush_all(seconds.to_i) : @cache.clear_cache
     else
       CommandResponse.new(false, "Soon we'll manage your retrieval request ==> #{args}", nil)
     end
@@ -257,7 +263,7 @@ class CommandHandler
   end
 
   def valid_flags?(flags)
-    if is_unsigned_int(flags)
+    if is_unsigned_int?(flags)
       valid = Integer(flags) == 0
     else
       chars = flags.scan /\w/
@@ -283,7 +289,7 @@ class CommandHandler
 
   # ---------- Specific Validations ----------
 
-  def is_unsigned_int(string)
+  def is_unsigned_int?(string)
     is_integer?(string) && Integer(string) >= 0
   end
 

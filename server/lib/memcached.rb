@@ -10,7 +10,7 @@ require_relative './models/cache_result.rb'
 class Memcached
 
   MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
-  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND'}
+  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND', error: 'ERROR', success: 'SUCCESS'}
 
   def initialize
     @hash_storage = Concurrent::Hash.new
@@ -36,7 +36,6 @@ class Memcached
   def gets(keys)
     entries = Array.new(keys.length)
     found_keys = 0
-
     results = ''
     keys.each do |key|
       get_result = get(key)
@@ -56,6 +55,22 @@ class Memcached
     header += ' ----------------- '
 
     final_message = 'MULTI_LINE\r\n' + header + '\r\n' + results
+    CacheResult.new(found_keys>0, final_message, entries)
+  end
+
+  def get_all
+    entries = Array.new()
+    found_keys = 0
+    results = 'ALL CACHE\r\n'
+    @hash_storage.each do |key, value|
+      get_result = get(key)
+      entries << get_result.args if get_result.args != nil  # the found cache entry
+      results += get_result.message + '\r\n'
+      found_keys += 1 unless get_result.message.include?MESSAGES[:not_found]
+    end
+    results += 'END'
+
+    final_message = 'MULTI_LINE\r\n' + results
     CacheResult.new(found_keys>0, final_message, entries)
   end
 
@@ -97,16 +112,29 @@ class Memcached
     # TODO
   end
 
-  def delete
-    # TODO
+  def delete(key)
+    if exists? (key)
+      remove_entry(key)
+      CacheResult.new(true,"#{MY_MESSAGES[:success]} Key #{key} deleted", nil)
+    else
+      CacheResult.new(false,"#{MESSAGES[:not_found]} Key #{key} not found", nil)
+    end
   end
 
-  def flush_all
-    # TODO
+  def clear_cache
+    @hash_storage.clear
+    if @hash_storage.length == 0
+      CacheResult.new(true,"#{MY_MESSAGES[:success]} All cache deleted", nil)
+    else
+      CacheResult.new(false,"#{MY_MESSAGES[:error]} could not flush all", nil)
+    end
   end
 
-  def flush_all(args)
-      seconds = args[:seconds]
+  def flush_all(seconds)
+      seconds == nil ? sleep(5) : sleep(seconds) # default 5 seconds
+      handle_thr = Thread.new {sleep(seconds)}
+      Thread.kill(handle_thr) # sends exit() to thr
+      clear_cache # flush all cache
   end
 
   # ===================================================
@@ -172,11 +200,11 @@ class Memcached
 
   def remove_expired_cache
     while @cleaning_cache
-      sleep(5) # 5 seconds
+      sleep(1) # default 5 seconds
       # --- Searching Expired Cache ---
       @hash_storage.each do |key, cache|
         if expired?(key)
-          @hash_storage.delete(key)
+          remove_entry(key)
           puts "Removing #{cache} with key: #{key}"
         end
       end
