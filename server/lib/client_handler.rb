@@ -25,7 +25,7 @@ class ClientHandler
     rescue
       @running = false
       puts "The client #{@id} has disconnected"
-      message = 'close' # this will trigger the remove client protocol in the server
+      message = ['close'] # this will trigger the remove client protocol in the server
     end
   end
 
