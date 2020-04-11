@@ -8,4 +8,8 @@ class CommandResponse
     @message = message
     @args = args
   end
+
+  def add_data(data)
+    @args[:data] = data if data != nil
+  end
 end
