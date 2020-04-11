@@ -186,17 +186,18 @@ class CommandHandler
   def manage_storage(command, args, data)
     # data.length should fit args.bytes
     unless data.length <= args[:bytes]
-      return "#{CLIENT_ERROR} Incomplete Data"
+      return "#{MESSAGE[:client_error]} Incomplete Data"
     end
 
     case command
     when 'add'
-      ## TODO: CONNECTING MEMCACHED METHODS
-      message_part1 = "Line --> command:#{command} "
-      message_part2 = ("key: #{args[:key]} flags: #{args[:flags]} exp_time: #{args[:exp_time]}")
-      message_part3 = ("bytes: #{args[:bytes]} noreply: #{args[:noreply]} data: #{data}")
-      message       = message_part1 + message_part2 + message_part3
-      CommandResponse.new(false, message, nil)
+      message_part1 = " Line --> [command:#{command} | "
+      message_part2 = ("key: #{args[:key]} | flags: #{args[:flags]} | exp_time: #{args[:exp_time]} |")
+      message_part3 = ("bytes: #{args[:bytes]} | noreply: #{args[:noreply]} | data: #{data}]")
+
+      result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
+      message = result.message + message_part1 + message_part2 + message_part3
+      CommandResponse.new(result.success, message, data)
     when 'cas'
       ## TODO: CONNECTING MEMCACHED METHODS
       message = "Line ==> #{args}"
@@ -216,11 +217,14 @@ class CommandHandler
     when 'hello'
       salute
     when 'get'
-      #@cache.get(args) ## TODO: CONNECTING MEMCACHED METHODS
-      message_part1 = "Line ==> command:#{command} "
-      message_part2 = "key: #{args[:key]} noreply: #{args[:noreply]}"
-      message       = message_part1 + message_part2
-      CommandResponse.new(false, message, nil)
+      result  = @cache.get(args[:key])
+      if result.success
+        data    = result.cache_entries.data if result.cache_entries != nil
+        message = result.message + " Line --> key: #{args[:key]} data: #{data}"
+      else
+        message = result.message + " Line --> key: #{args[:key]} not found"
+      end
+      CommandResponse.new(result.success, message, result.cache_entries)
     else
       message_part1 = "Soon we'll manage your retrieval request ==> "
       message_part2 = "#{args}"
@@ -294,8 +298,10 @@ class CommandHandler
     if seconds > 2592000
       ## TODO: Manage the interpretation as a unix timestamp
       return seconds = 0
+    else
+      ttl = Time.now.to_i + seconds
+      return ttl
     end
-    seconds
   end
 
   # ---------- Specific Validations ----------
