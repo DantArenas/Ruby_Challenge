@@ -53,7 +53,6 @@ class Server
     loop do
       message = handler.listen # expecting array
       command_data = message[0] if message != nil
-      puts "in position 0 message is: #{command_data}" if command_data != nil
       if command_data != nil && command_data != ""
         command = command_data.split("\s")[0]
         if command == "close" || command == "quit"

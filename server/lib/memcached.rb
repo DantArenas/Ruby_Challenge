@@ -104,12 +104,22 @@ class Memcached
     end
   end
 
-  def append
-    # TODO
+  def append(key, data, flags, exp_time)
+    if !exists?(key)
+      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+    else
+      current_entry = @hash_storage[key]
+      set(key, current_entry.data + data, flags, exp_time)
+    end
   end
 
-  def prepend
-    # TODO
+  def prepend(key, data, flags, exp_time)
+    if !exists?(key)
+      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+    else
+      current_entry = @hash_storage[key]
+      set(key, data + current_entry.data, flags, exp_time)
+    end
   end
 
   def increment
