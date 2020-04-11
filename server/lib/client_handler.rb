@@ -20,9 +20,10 @@ class ClientHandler
   def listen
     begin
       if @running
-        message = @client_socket.gets.chomp.split('\r\n')[0]
+        message = @client_socket.gets.chomp.split('\r\n')
       end
     rescue
+      @running = false
       puts "The client #{@id} has disconnected"
       message = 'close' # this will trigger the remove client protocol in the server
     end
@@ -30,14 +31,30 @@ class ClientHandler
 
   def manage_requests (message)
     # We're just checking the command Handler
-    parsed_command = @command_handler.split_command(message) # It's a commnad_response
+    parsed_command = @command_handler.split_command(message[0]) # It's a commnad_response
     if parsed_command.success
+
+      # Add data if is a storage request
+      if @command_handler.is_storage?(parsed_command.args[:command])
+        data = if message.length >= 2
+               message[1]
+             else
+               @client_socket.puts('SEND DATA')
+               get_missing_data(parsed_command.args[:bytes])
+             end
+        parsed_command.add_data(data)
+      end
+
       response = @command_handler.manage_request(parsed_command.args)
       send_response(response)
     else
       send_response(parsed_command)
     end
+  end # listen
 
+  def get_missing_data(length)
+    data = @client_socket.recv(length + 2)
+    data[0..-2] # delete the car trailing \r\n
   end
 
 # ----------  SENDING MESSAGES ----------

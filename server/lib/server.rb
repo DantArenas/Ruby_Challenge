@@ -52,8 +52,9 @@ class Server
   def listen_requests(handler)
     loop do
       message = handler.listen
-      if message != nil && message != ""
-        command = message.split("\s")[0]
+      command_data = message[0] if message != nil
+      if command_data != nil && command_data != ""
+        command = command_data.split("\s")[0]
         if command == "close" || command == "quit"
           remove_client(handler)
         elsif command.include? "clients"
