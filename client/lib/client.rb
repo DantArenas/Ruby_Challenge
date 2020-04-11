@@ -28,15 +28,24 @@ class Client
           message = $stdin.gets.chomp
 
           if message == 'add'
-            line = 'add 12345 0 60 19 noreplay'
-            puts "shortcut ussed... sending: #{line} "
-            @socket.puts line
-          elsif message == 'tigres'
-            @socket.puts 'Tres tristes tigres'
+            @socket.puts use_shortcut('add 12345 0 60 19 noreplay')
           elsif message == 'cas'
-            line = 'cas 12345 0 180 15 321 noreplay'
-            print "shortcut ussed... sending: #{line} "
-            @socket.puts line
+            @socket.puts use_shortcut('cas 12345 0 180 15 321 noreplay')
+          elsif message == 'tigres'
+              @socket.puts use_shortcut('Tres tristes tigres')
+          elsif message == 'multi'
+            @socket.puts use_shortcut('add 123 0 60 19 \r\nHabia una vez\r\n')
+            sleep(0.5)
+            @socket.puts use_shortcut('add 456 0 60 14 \r\nuna Iguana,\r\n')
+            sleep(0.5)
+            @socket.puts use_shortcut('add 789 0 60 22 \r\ncon una ruana de lana,\r\n')
+            sleep(0.5)
+            @socket.puts use_shortcut('add 101 0 60 20 \r\npeinandose la melena\r\n')
+            sleep(0.5)
+            @socket.puts use_shortcut('add 112 0 60 23 \r\njunto al rio magdalena\r\n')
+            sleep(0.5)
+            @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
+            sleep(0.5)
           else
             @socket.puts message
           end
@@ -48,16 +57,18 @@ class Client
     end
   end
 
+  def use_shortcut (line)
+    puts "shortcut ussed... sending: #{line} "
+    return line
+  end
+
   # ------------ RECEIVE MESSAGES FROM SERVER ------------
 
   def listen_server
     begin
       Thread.new do
         loop do
-          server_response = @socket.gets
-          if server_response != nil
-            handle_message(server_response.chomp)
-          end
+          get_message
         end
       end
     rescue IOError => e
@@ -66,9 +77,18 @@ class Client
     end
   end
 
+  def get_message
+    server_response = @socket.gets
+    if server_response != nil
+      handle_message(server_response.chomp)
+    end
+  end
+
   def handle_message(message)
     if message.include? 'SEND DATA'
       puts "Storage command accpeted. To continue #{message}"
+    elsif message.include? 'MULTI_LINE'
+      puts get_multi_line()
     elsif message.include? 'Clossing'
       close_client
     elsif message.include? 'Server:'
@@ -81,6 +101,18 @@ class Client
       puts message
       puts 'Write your command'
     end
+  end
+
+  def get_multi_line()
+    full_message = StringIO.new
+    message_line = @socket.gets
+
+    while !message_line.start_with?('END') # && !message_line.start_with?('ERROR') && !message_line.start_with?('CLIENT_ERROR')
+      full_message << message_line
+      message_line = @socket.gets
+    end
+    full_message << message_line
+    full_message.string
   end
 
   # ------------ CLOSE CONNECTION WITH SERVER ------------
