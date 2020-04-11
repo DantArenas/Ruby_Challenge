@@ -46,7 +46,7 @@ class ClientHandler
       end
 
       response = @command_handler.manage_request(parsed_command.args)
-      send_response(response)
+      send_response(response) if response != nil
     else
       send_response(parsed_command)
     end

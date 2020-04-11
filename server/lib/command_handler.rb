@@ -187,16 +187,28 @@ class CommandHandler
     case command
     when 'set'
       result  = @cache.set(args[:key], data, args[:flags], args[:exp_time])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     when 'add'
       result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     when 'replace'
       result  = @cache.replace(args[:key], data, args[:flags], args[:exp_time])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     when 'append'
       result  = @cache.append(args[:key], data, args[:flags], args[:exp_time])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     when 'prepend'
       result  = @cache.prepend(args[:key], data, args[:flags], args[:exp_time])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     when 'cas'
       result  = @cache.cas(args[:key], args[:data], args[:flags], args[:exp_time], args[:cas_unique])
+      args[:noreply] != nil && !args[:noreply] ? result : nil
+    when 'incr'
+      ## TODO: increment
+      args[:noreply] != nil && !args[:noreply] ? result : nil
+    when 'decr'
+      ## TODO: decrement
+      args[:noreply] != nil && !args[:noreply] ? result : nil
     else
       CommandResponse.new(false, "Command not found ==> #{args}", nil)
     end
