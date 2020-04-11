@@ -7,10 +7,10 @@ class Client
 
   def initialize(socket)
     @socket = socket
-
-    @send_connection_request = send_connection_request
+    @enable_easy_input = true
+    @send_requests = send_requests
     @listen_server = listen_server
-    @send_connection_request.join
+    @send_requests.join
     @listen_server.join
   end
 
@@ -21,41 +21,49 @@ class Client
 
   # -------------- SEND MESSAGES TO SERVER--------------
 
-  def send_connection_request
+  def send_requests
     begin
       Thread.new do
         loop do
           message = $stdin.gets.chomp
-
-          if message == 'add'
-            puts 'Write the data u want to send....'
-            data = gets.chomp
-            @socket.puts add_line_generator(ttl: 200, data: data)
-          elsif message == 'cas'
-            @socket.puts use_shortcut('cas 12345 0 180 15 321 noreplay')
-          elsif message == 'tigres'
-              @socket.puts use_shortcut('Tres tristes tigres')
-          elsif message == 'multi'
-            @socket.puts add_line_generator(key: 123, ttl: 200, data: "Habia una vez")
-            sleep(0.3) # gives time to server to anwer the each request
-            @socket.puts add_line_generator(key: 456, ttl: 200, data: "una Iguana,")
-            sleep(0.3) # gives time to server to anwer the each request
-            @socket.puts add_line_generator(key: 789, ttl: 200, data: "con una ruana de lana,")
-            sleep(0.3) # gives time to server to anwer the each request
-            @socket.puts add_line_generator(key: 101, ttl: 200, data: "peinandose la melena")
-            sleep(0.3) # gives time to server to anwer the each request
-            @socket.puts add_line_generator(key: 112, ttl: 200, data: "junto al rio magdalena")
-            sleep(0.3) # gives time to server to anwer the each request
-            @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
-            sleep(0.3) # gives time to server to anwer the each request
+          if @enable_easy_input
+            easy_inpu(message) # the following code is just to make easier doing some simple testing
           else
-            @socket.puts message
+            @socket.puts message # this should be enoguh to send requests to the server
           end
         end
       end
     rescue IOError => e
       puts e.message
       @socket.close
+    end
+  end
+
+  def easy_inpu(message)
+    # the following code is just to make easier doing some simple testing
+    if message == 'add'
+      puts 'Write the data u want to send....'
+      data = gets.chomp
+      @socket.puts add_line_generator(ttl: 200, data: data)
+    elsif message == 'cas'
+      @socket.puts use_shortcut('cas 12345 0 180 15 321 noreplay')
+    elsif message == 'tigres'
+        @socket.puts use_shortcut('Tres tristes tigres')
+    elsif message == 'multi'
+      @socket.puts add_line_generator(key: 123, ttl: 200, data: "Habia una vez")
+      sleep(0.5) # gives time to server to anwer the each request
+      @socket.puts add_line_generator(key: 456, ttl: 200, data: "una Iguana,")
+      sleep(0.5) # gives time to server to anwer the each request
+      @socket.puts add_line_generator(key: 789, ttl: 200, data: "con una ruana de lana,")
+      sleep(0.5) # gives time to server to anwer the each request
+      @socket.puts add_line_generator(key: 101, ttl: 200, data: "peinandose la melena")
+      sleep(0.5) # gives time to server to anwer the each request
+      @socket.puts add_line_generator(key: 112, ttl: 200, data: "junto al rio magdalena")
+      sleep(0.5) # gives time to server to anwer the each request
+      @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
+      sleep(0.5) # gives time to server to anwer the each request
+    else
+      @socket.puts message # this should be enoguh to send requests to the server
     end
   end
 

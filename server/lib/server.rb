@@ -42,6 +42,7 @@ class Server
         puts "New connection established! Now #{@clients.length()} clients :>"
         puts "WAITING FOR REQUESTS"
         handler.send("Server: Connection established with #{handler}")
+        handler.send("Server: You are the client ##{@clients.length()}")
         handler.send("Server: You may introduce commands now")
         listen_requests(handler) # allow communication
       end
