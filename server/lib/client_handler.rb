@@ -40,7 +40,7 @@ class ClientHandler
                message[1]
              else
                @client_socket.puts('SEND DATA')
-               get_missing_data(parsed_command.args[:bytes])
+               get_missing_data(@client_socket, parsed_command.args[:bytes])
              end
         parsed_command.add_data(data)
       end
@@ -52,8 +52,8 @@ class ClientHandler
     end
   end # listen
 
-  def get_missing_data(length)
-    data = @client_socket.recv(length + 2)
+  def get_missing_data(socket, length)
+    data = socket.recv(length + 2)
     data[0..-2] # delete the car trailing \r\n
   end
 

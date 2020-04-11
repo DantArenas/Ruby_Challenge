@@ -6,6 +6,6 @@ class CacheResult
   def initialize(success, message, args)
     @success = success
     @message = message
-    @cache_entries = args # can store many things
+    @args = args # can store many things
   end
 end
