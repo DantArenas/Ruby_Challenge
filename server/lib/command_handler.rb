@@ -191,7 +191,7 @@ class CommandHandler
     when 'add'
       result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
     when 'replace'
-      result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
+      result  = @cache.replace(args[:key], data, args[:flags], args[:exp_time])
     when 'cas'
       ## TODO: CONNECTING MEMCACHED METHODS
       CommandResponse.new(false, "Line ==> #{args}", nil)
