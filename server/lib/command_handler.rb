@@ -186,6 +186,8 @@ class CommandHandler
     end
 
     case command
+    when 'set'
+      result  = @cache.set(args[:key], data, args[:flags], args[:exp_time])
     when 'add'
       result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
     when 'cas'
