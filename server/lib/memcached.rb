@@ -37,24 +37,25 @@ class Memcached
     entries = Array.new(keys.length)
     found_keys = 0
 
-    results = "MULTI_LINE\n"
+    results = ''
     keys.each do |key|
       get_result = get(key)
       entries << get_result.args if get_result.args != nil  # the found cache entry
-      results += "#{get_result.message}\n"
+      results += get_result.message + '\r\n'
       found_keys += 1 unless get_result.message.include?MESSAGES[:not_found]
     end
     results += 'END'
 
     if found_keys == keys.length
-      header = "#{MY_MESSAGES[:all_found]}\n"
+      header = MY_MESSAGES[:all_found]
     elsif found_keys == 0
-      header = "#{MY_MESSAGES[:none_found]}\n"
+      header = MY_MESSAGES[:none_found]
     else
-      header = "#{MY_MESSAGES[:only_found]}\n"
+      header = MY_MESSAGES[:only_found]
     end
+    header += ' ----------------- '
 
-    final_message = header + results
+    final_message = 'MULTI_LINE\r\n' + header + '\r\n' + results
     CacheResult.new(found_keys>0, final_message, entries)
   end
 
