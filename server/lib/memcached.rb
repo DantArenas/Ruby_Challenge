@@ -4,8 +4,7 @@
 require 'concurrent-ruby'
 
 require_relative './models/cache_data.rb'
-require_relative './models/cache_storage_result.rb'
-require_relative './models/cache_retrieval_result.rb'
+require_relative './models/cache_result.rb'
 
 # Class Memcached
 class Memcached
@@ -27,9 +26,9 @@ class Memcached
   def get(key)
     if valid_for_retrieval?(key)
       entry = @hash_storage[key]
-      CacheRetrievalResult.new(success: true, message: MESSAGES[:found], cache_entries: entry)
+      CacheResult.new(true, "#{MESSAGES[:found]} [key: #{key}, data: #{entry.data}]" , entry)
     else
-      CacheRetrievalResult.new(success: false, message: MESSAGES[:not_found], cache_entries: nil)
+      CacheResult.new(false, "#{MESSAGES[:not_found]} [key: #{key}]", nil)
     end
   end
 
@@ -47,7 +46,7 @@ class Memcached
     cas_unique = next_cas_val # get cas value and increment by 1
     entry = CacheData.new(key: key, data: data, flags: flags, exp_time: exp_time, cas_unique: cas_unique)
     @hash_storage[key] = entry # add cache data to the storage
-    CacheStorageResult.new(success: true, message: "#{MESSAGES[:stored]}", cache_entry: entry)
+    CacheResult.new(true, "#{MESSAGES[:stored]} [key: #{key}, data: #{data}]", entry)
   end
 
   def add(key, data, flags, exp_time)
@@ -55,11 +54,7 @@ class Memcached
       set(key, data, flags, exp_time)
     else
      # Couldn't add, key already exists
-     CacheStorageResult.new(
-       success: false,
-       message:
-       "#{MESSAGES[:exists]} Key #{key} is already registered",
-       cache_entry: nil)
+     CacheResult.new(false,"#{MESSAGES[:exists]} Key #{key} is already registered", nil)
     end
   end
 

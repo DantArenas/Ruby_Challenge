@@ -191,48 +191,27 @@ class CommandHandler
 
     case command
     when 'add'
-      message_part1 = " Line --> [command:#{command} | "
-      message_part2 = ("key: #{args[:key]} | flags: #{args[:flags]} | exp_time: #{args[:exp_time]} |")
-      message_part3 = ("bytes: #{args[:bytes]} | noreply: #{args[:noreply]} | data: #{data}]")
-
       result  = @cache.add(args[:key], data, args[:flags], args[:exp_time])
-      message = result.message + message_part1 + message_part2 + message_part3
-      CommandResponse.new(result.success, message, data)
     when 'cas'
       ## TODO: CONNECTING MEMCACHED METHODS
-      message = "Line ==> #{args}"
-      CommandResponse.new(false, message, nil)
+      CommandResponse.new(false, "Line ==> #{args}", nil)
     else
-      message_part1 = "Soon we'll manage your storage request ==> "
-      message_part2 = "#{args}"
-      message       = message_part1 + message_part2
-      CommandResponse.new(false, message, nil)
+      CommandResponse.new(false, "Soon we'll manage your storage request ==> #{args}", nil)
     end
   end
 
   def manage_retrieval(command, args)
-    ## TODO: Answer the Request
+    ## TODO: gets delete flush_all stats hello
 
     case command
     when 'hello'
       salute
     when 'get'
       result  = @cache.get(args[:key])
-      if result.success
-        data    = result.cache_entries.data if result.cache_entries != nil
-        message = result.message + " Line --> key: #{args[:key]} data: #{data}"
-      else
-        message = result.message + " Line --> key: #{args[:key]} not found"
-      end
-      CommandResponse.new(result.success, message, result.cache_entries)
     else
-      message_part1 = "Soon we'll manage your retrieval request ==> "
-      message_part2 = "#{args}"
-      message       = message_part1 + message_part2
-      CommandResponse.new(false, message, nil)
+      CommandResponse.new(false, "Soon we'll manage your retrieval request ==> #{args}", nil)
     end
-
-  end
+  end # manage retrievals
 
   # ----------------------------------------------------------------
   # ---                     OTHER RESPONSES                      ---
