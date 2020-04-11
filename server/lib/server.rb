@@ -55,7 +55,7 @@ class Server
       command_data = message[0] if message != nil
       if command_data != nil && command_data != ""
         command = command_data.split("\s")[0]
-        if message == "close" || message == "quit"
+        if command == "close" || command == "quit"
           remove_client(handler)
         elsif command == "clients"
           handler.send("Server has #{@clients.length()} clients connected :D")
