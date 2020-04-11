@@ -96,8 +96,12 @@ class Memcached
     end
   end
 
-  def replace
-    # TODO
+  def replace(key, data, flags, exp_time)
+    if !exists?(key)
+      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+    else
+      set(key, data, flags, exp_time)
+    end
   end
 
   def append
