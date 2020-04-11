@@ -65,11 +65,7 @@ class ClientHandler
 
   def send_response(response)
     if @running
-      if response.args != nil
-        ## TODO: Send full response
-      else
-        @client_socket.puts response.message
-      end
+      @client_socket.puts response.message
     end
   end
 
