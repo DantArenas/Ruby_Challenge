@@ -76,8 +76,14 @@ class Memcached
 
   # ---         MEMCACHED STORAGE METHODS          ---
 
-  def cas
-    # TODO
+  def cas(key, data, flags, exp_time, cas_unique)
+    if !exists?(key)
+      CacheResult.new(success: false, message: MESSAGES[:not_found])
+    elsif @hash_storage[key].cas_unique != cas_unique
+      CacheResult.new(success: false, message: MESSAGES[:exists])
+    else
+      set(key, data, flags, exp_time)
+    end
   end
 
   def set(key, data, flags, exp_time)
@@ -123,7 +129,11 @@ class Memcached
   end
 
   def increment
-    # TODO
+    ## TODO:
+  end
+
+  def decrement
+    ## TODO:
   end
 
   def delete(key)

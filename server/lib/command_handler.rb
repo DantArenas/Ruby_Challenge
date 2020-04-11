@@ -174,7 +174,6 @@ class CommandHandler
        data = args[:data] if args[:data] != nil
        manage_storage(command, args, data)
      else                       # Is not a command
-       ## TODO:
        manage_no_command(args[:line]) # the complete line
      end
    end
@@ -197,10 +196,9 @@ class CommandHandler
     when 'prepend'
       result  = @cache.prepend(args[:key], data, args[:flags], args[:exp_time])
     when 'cas'
-      ## TODO: CONNECTING MEMCACHED METHODS
-      CommandResponse.new(false, "Line ==> #{args}", nil)
+      result  = @cache.cas(args[:key], args[:data], args[:flags], args[:exp_time], args[:cas_unique])
     else
-      CommandResponse.new(false, "Soon we'll manage your storage request ==> #{args}", nil)
+      CommandResponse.new(false, "Command not found ==> #{args}", nil)
     end
   end
 
