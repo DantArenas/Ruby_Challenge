@@ -175,23 +175,26 @@ class CommandHandler
        ## TODO:
        manage_retrieval(command, args)
      elsif is_storage?(command) # Is Storage Request?
-       manage_storage(command, args)
+       data = args[:data] if args[:data] != nil
+       manage_storage(command, args, data)
      else                       # Is not a command
        ## TODO:
        manage_no_command(args[:line]) # the complete line
      end
    end
 
-  def manage_storage(command, args, data) ## TODO: add data
+  def manage_storage(command, args, data)
+    # data.length should fit args.bytes
+    unless data.length <= args[:bytes]
+      return "#{CLIENT_ERROR} Incomplete Data"
+    end
 
-    ## TODO data.length should fit args.bytes
-
-    case commands
+    case command
     when 'add'
       ## TODO: CONNECTING MEMCACHED METHODS
-      message_part1 = "Line ==> command:#{command} "
-      message_part2 = ("key:#{args[:key]} flags:#{args[:flags]} exp_time:#{args[:exp_time]}")
-      message_part3 = ("bytes:#{args[:bytes]} noreply:#{args[:noreply]}")
+      message_part1 = "Line --> command:#{command} "
+      message_part2 = ("key: #{args[:key]} flags: #{args[:flags]} exp_time: #{args[:exp_time]}")
+      message_part3 = ("bytes: #{args[:bytes]} noreply: #{args[:noreply]} data: #{data}")
       message       = message_part1 + message_part2 + message_part3
       CommandResponse.new(false, message, nil)
     when 'cas'
