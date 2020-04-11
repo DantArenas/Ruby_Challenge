@@ -10,6 +10,7 @@ require_relative './models/cache_result.rb'
 class Memcached
 
   MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
+  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND'}
 
   def initialize
     @hash_storage = Concurrent::Hash.new
@@ -33,7 +34,28 @@ class Memcached
   end
 
   def gets(keys)
-    ## TODO: multiple gets with multiple keys
+    entries = Array.new(keys.length)
+    found_keys = 0
+
+    results = "MULTI_LINE\n"
+    keys.each do |key|
+      get_result = get(key)
+      entries << get_result.args if get_result.args != nil  # the found cache entry
+      results += "#{get_result.message}\n"
+      found_keys += 1 unless get_result.message.include?MESSAGES[:not_found]
+    end
+    results += 'END'
+
+    if found_keys == keys.length
+      header = "#{MY_MESSAGES[:all_found]}\n"
+    elsif found_keys == 0
+      header = "#{MY_MESSAGES[:none_found]}\n"
+    else
+      header = "#{MY_MESSAGES[:only_found]}\n"
+    end
+
+    final_message = header + results
+    CacheResult.new(found_keys>0, final_message, entries)
   end
 
   # ---         MEMCACHED STORAGE METHODS          ---

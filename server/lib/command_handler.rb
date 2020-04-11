@@ -106,20 +106,17 @@ class CommandHandler
     if command == 'gets' # gets can have different number of keys
       if parts.length > 0
         noreply = parts[0].include?('noreply')
-
         if noreply
           parts.delete_at(0) # drop noreply keep keys
         end
-
         parts.each do |key| # looks for invalid keys
           unless valid_key?(key)
             return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid key '#{key}'", args)
           end
         end
-
+        # all keys are valid
         args = { command: command, noreply: noreply, keys: parts }
         return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
-
       else
         return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Missing keys", nil)
       end
@@ -172,7 +169,6 @@ class CommandHandler
      command = args[:command] # first part must be the command
 
      if is_retrieval?(command)  # Is Retrieval Request?
-       ## TODO:
        manage_retrieval(command, args)
      elsif is_storage?(command) # Is Storage Request?
        data = args[:data] if args[:data] != nil
@@ -207,7 +203,9 @@ class CommandHandler
     when 'hello'
       salute
     when 'get'
-      result  = @cache.get(args[:key])
+      result = @cache.get(args[:key])
+    when 'gets'
+      result = @cache.gets(args[:keys])
     else
       CommandResponse.new(false, "Soon we'll manage your retrieval request ==> #{args}", nil)
     end
