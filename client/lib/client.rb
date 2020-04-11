@@ -35,17 +35,17 @@ class Client
               @socket.puts use_shortcut('Tres tristes tigres')
           elsif message == 'multi'
             @socket.puts use_shortcut('add 123 0 60 19 \r\nHabia una vez\r\n')
-            sleep(0.5)
+            sleep(0.3)
             @socket.puts use_shortcut('add 456 0 60 14 \r\nuna Iguana,\r\n')
-            sleep(0.5)
+            sleep(0.3)
             @socket.puts use_shortcut('add 789 0 60 22 \r\ncon una ruana de lana,\r\n')
-            sleep(0.5)
+            sleep(0.3)
             @socket.puts use_shortcut('add 101 0 60 20 \r\npeinandose la melena\r\n')
-            sleep(0.5)
+            sleep(0.3)
             @socket.puts use_shortcut('add 112 0 60 23 \r\njunto al rio magdalena\r\n')
-            sleep(0.5)
+            sleep(0.3)
             @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
-            sleep(0.5)
+            sleep(0.3)
           else
             @socket.puts message
           end
@@ -88,7 +88,7 @@ class Client
     if message.include? 'SEND DATA'
       puts "Storage command accpeted. To continue #{message}"
     elsif message.include? 'MULTI_LINE'
-      puts get_multi_line()
+      get_multi_line(message)
     elsif message.include? 'Clossing'
       close_client
     elsif message.include? 'Server:'
@@ -103,16 +103,15 @@ class Client
     end
   end
 
-  def get_multi_line()
-    full_message = StringIO.new
-    message_line = @socket.gets
-
-    while !message_line.start_with?('END') # && !message_line.start_with?('ERROR') && !message_line.start_with?('CLIENT_ERROR')
-      full_message << message_line
-      message_line = @socket.gets
+  def get_multi_line(message)
+    parts = message.chomp.split('\r\n')
+    parts.delete_at(0)
+    if parts.length > 0
+      parts.each do |line|
+        puts line
+        puts 'Write your command' if line == 'END'
+      end
     end
-    full_message << message_line
-    full_message.string
   end
 
   # ------------ CLOSE CONNECTION WITH SERVER ------------
