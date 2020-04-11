@@ -57,9 +57,9 @@ class Server
         command = command_data.split("\s")[0]
         if command == "close" || command == "quit"
           remove_client(handler)
-        elsif command.include? "clients"
+        elsif command == "clients"
           handler.send("Server has #{@clients.length()} clients connected :D")
-        elsif message.include? "server -v"
+        elsif command == "server -v"
           handler.send("Your SERVER VERSION is #{SERVER_VERSION} ;)")
         else # isn't a server request, let the client handler manage it
           handler.manage_requests(message)
