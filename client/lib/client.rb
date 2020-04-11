@@ -28,24 +28,26 @@ class Client
           message = $stdin.gets.chomp
 
           if message == 'add'
-            @socket.puts use_shortcut('add 12345 0 60 19 noreplay')
+            puts 'Write the data u want to send....'
+            data = gets.chomp
+            @socket.puts add_line_generator(ttl: 200, data: data)
           elsif message == 'cas'
             @socket.puts use_shortcut('cas 12345 0 180 15 321 noreplay')
           elsif message == 'tigres'
               @socket.puts use_shortcut('Tres tristes tigres')
           elsif message == 'multi'
-            @socket.puts use_shortcut('add 123 0 60 19 \r\nHabia una vez\r\n')
-            sleep(0.3)
-            @socket.puts use_shortcut('add 456 0 60 14 \r\nuna Iguana,\r\n')
-            sleep(0.3)
-            @socket.puts use_shortcut('add 789 0 60 22 \r\ncon una ruana de lana,\r\n')
-            sleep(0.3)
-            @socket.puts use_shortcut('add 101 0 60 20 \r\npeinandose la melena\r\n')
-            sleep(0.3)
-            @socket.puts use_shortcut('add 112 0 60 23 \r\njunto al rio magdalena\r\n')
-            sleep(0.3)
+            @socket.puts add_line_generator(key: 123, ttl: 200, data: "Habia una vez")
+            sleep(0.3) # gives time to server to anwer the each request
+            @socket.puts add_line_generator(key: 456, ttl: 200, data: "una Iguana,")
+            sleep(0.3) # gives time to server to anwer the each request
+            @socket.puts add_line_generator(key: 789, ttl: 200, data: "con una ruana de lana,")
+            sleep(0.3) # gives time to server to anwer the each request
+            @socket.puts add_line_generator(key: 101, ttl: 200, data: "peinandose la melena")
+            sleep(0.3) # gives time to server to anwer the each request
+            @socket.puts add_line_generator(key: 112, ttl: 200, data: "junto al rio magdalena")
+            sleep(0.3) # gives time to server to anwer the each request
             @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
-            sleep(0.3)
+            sleep(0.3) # gives time to server to anwer the each request
           else
             @socket.puts message
           end
@@ -60,6 +62,15 @@ class Client
   def use_shortcut (line)
     puts "shortcut ussed... sending: #{line} "
     return line
+  end
+
+  def add_line_generator (args)
+    key   = args[:key] != nil ? args[:key] : rand(999)
+    ttl   = args[:ttl]
+    data  = args[:data]
+    bytes = data.bytesize
+    line  = 'add ' + key.to_s + ' 0 ' + ttl.to_s + ' ' + bytes.to_s + ' \r\n' + data + '\r\n'
+    use_shortcut(line)
   end
 
   # ------------ RECEIVE MESSAGES FROM SERVER ------------
@@ -128,25 +139,6 @@ end
 # ===================================================
 # ===           HERE WE LAUNCH THE CLIENT         ===
 # ===================================================
-
-=begin
-    line = 'Tres tristes tigres'
-    data = ["Tres tristes tigres", "comen trigo en el trigal"]
-    data_size = ObjectSpace.memsize_of(data)
-
-    def array_bytesize(array)
-      byte_size = 0
-      array.each do |string|
-        byte_size += string.bytesize if (string != nil && string != "")
-      end
-      byte_size
-    end
-
-    byte_size = array_bytesize(data)
-
-    puts "data obj size = #{data_size} vs bytes size = #{byte_size}"
-    puts "tigres size = #{line.bytesize}"
-=end
 
 socket = TCPSocket.open('localhost', 8080)
 Client.new(socket)
