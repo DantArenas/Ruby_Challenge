@@ -47,16 +47,17 @@ class Memcached
       results += get_result.message + '\r\n'
       found_keys += 1 unless get_result.message.include?MESSAGES[:not_found]
     end
-    results += 'END'
+    results += 'END\n\n'
 
+    header = '\n\n'
     if found_keys == keys.length
-      header = MY_MESSAGES[:all_found]
+      header += MY_MESSAGES[:all_found]
     elsif found_keys == 0
-      header = MY_MESSAGES[:none_found]
+      header += MY_MESSAGES[:none_found]
     else
-      header = MY_MESSAGES[:only_found]
+      header += MY_MESSAGES[:only_found]
     end
-    header += ' ----------------- '
+    header += ' ----------------- \n'
 
     final_message = 'MULTI_LINE\r\n' + header + '\r\n' + results
     CacheResult.new(found_keys>0, final_message, entries)

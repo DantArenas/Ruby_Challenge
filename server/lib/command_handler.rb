@@ -255,8 +255,27 @@ class CommandHandler
     if line.include? "fine" # This condition is part of the 'salute' protocol
       CommandResponse.new(false, 'Server Responded: Great! Then, how can I help you?', nil)
     else # for the moment, we can inform the client that it's command is not available
-      CommandResponse.new(false, "-'#{line}'- isn't a command", nil)
+      # CommandResponse.new(false, "-'#{line}'- isn't a command", nil)
+      available_commands(line)
     end
+  end
+
+  def available_commands(line)
+
+    results = '* Retrieval Commands\r\n'
+    RETRIEVAL_COMMANDS.each do |command|
+      results += '*** ' + command.to_s + '\r\n'
+    end
+
+    results += '\n* Storage Commands\r\n'
+    STORAGE_COMMANDS.each do |command|
+      results += '*** ' + command.to_s + '\r\n'
+    end
+
+    results += 'END\n'
+
+    final_message = 'MULTI_LINE\r\n' + '\n-' + "#{line}" + '- is not a command\r\n\nAVAILABLE COMMANDS:\r\n' + results
+    CacheResult.new(false, final_message, nil)
   end
 
   def salute # just an EasterEgg, salute protocol between client & server.

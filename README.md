@@ -53,6 +53,7 @@ To **close** the client connection you can type in the word "*close*", just like
 Next, a list of all commands available to the moment of this commit.
 
 ### Server Commands
+This commands are handled by the server it self.
 #### Clients (command: "clients")
 Response with the number of clients connected to the server.
 #### Server Version (command: "server -v")
@@ -62,15 +63,20 @@ Notifies and closes communication with the server. Also finishes the client exec
 #### Salute (command: "hello")
 Literally a salute protocol, because of manners matters. Say hello to the server, and it will respond accordingly!
 
+### Storage & Edition Commands
+This store or edit stored data in the server. If the client does not want an answer, can add the argument 'noreply' just before the data.
+#### Set (command: "set")
+Storages data in the key. If the key already exists is overwritten.
+"set <key> <flags> <ttl> <bytes> (optional:<noreply>) \r\nDATA\r\n"
+```
+set 123 0 200 5 \r\nhello\r\n
+```
+
 # TODO
 
-1. Send object through server via JSon
-2. Retrieval commands 'gat', 'gats'
-
-# NOT SPECIFIED IN THE PROTOCOL
-1. Messages:
-   ALL_FOUND
-   ONLY_FOUND
-   NONE_FOUND
-   ERROR
-   SUCCESS
+1. Send object through server as JSon
+2. Retrieval commands 'gat', 'gats', 'stats'
+3. Storage commands 'incr', 'decr', 'verbosity'
+4. Implement Flags
+5. Ensure byte length fits specific data length
+6. Interpret exp_time bigger than 2.592.000 as a unix timestamp

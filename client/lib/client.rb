@@ -128,8 +128,11 @@ class Client
     parts.delete_at(0)
     if parts.length > 0
       parts.each do |line|
-        puts line
-        puts 'Write your command' if line == 'END'
+        sub_lines = line.chomp.split('\n')
+        sub_lines.each do |sub|
+          puts sub
+        end
+        puts 'Write your command' if line.include? ('END')
       end
     end
   end
