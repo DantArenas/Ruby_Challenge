@@ -67,8 +67,11 @@ Literally a salute protocol, because of manners matters. Say hello to the server
 This store or edit stored data in the server. If the client does not want an answer, can add the argument 'noreply' just before the data.
 #### Set (command: "set")
 Storages data in the key. If the key already exists is overwritten.
-"set <key> <flags> <ttl> <bytes> (optional:<noreply>) \r\nDATA\r\n"
+
 ```
+set <key> <flags> <ttl> <bytes> (optional:<noreply>) \r\nDATA\r\n
+set  123     0     200     5          noreply        \r\nhello\r\n
+# Example
 set 123 0 200 5 \r\nhello\r\n
 ```
 
