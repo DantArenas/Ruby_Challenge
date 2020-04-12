@@ -61,3 +61,16 @@ Response with the version of the server.
 Notifies and closes communication with the server. Also finishes the client execution.
 #### Salute (command: "hello")
 Literally a salute protocol, because of manners matters. Say hello to the server, and it will respond accordingly!
+
+# TODO
+
+1. Send object through server via JSon
+2. Retrieval commands 'gat', 'gats'
+
+# NOT SPECIFIED IN THE PROTOCOL
+1. Messages:
+   ALL_FOUND
+   ONLY_FOUND
+   NONE_FOUND
+   ERROR
+   SUCCESS

@@ -1,29 +1,32 @@
 # frozen_string_literal: true
-# We'll use Hash so we avoid existing keys entries
 
-require 'concurrent-ruby'
-
-require_relative './models/cache_data.rb'
-require_relative './models/cache_result.rb'
+require_relative './models/cache_data.rb'   # stores cache information
+require_relative './models/cache_result.rb' # stores command response information
 
 # Class Memcached
 class Memcached
 
   MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
+  # This messages are not specified by the protocol, but I find them useful
   MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND', error: 'ERROR', success: 'SUCCESS'}
 
   def initialize
-    @hash_storage = Concurrent::Hash.new
+    # We'll use Hash so we avoid existing keys entries
+    @hash_storage = Hash.new
     @cas_value = 2**32 # CAS = Check And Set
     @cleaning_cache = false
   end
 
   # ===================================================
-  # ===         MEMCACHED PROTOCOL METHODS          ===
+  # ===    MEMCACHED RETRIEVAL PROTOCOL METHODS     ===
   # ===================================================
 
-  # ---         MEMCACHED RETRIEVAL METHODS          ---
+  # All this methods return a CacheResult Object, wich contains 3 variables
+  # 1. Success, if the operation was successful
+  # 2. Message, wich contains information about the operation
+  # 3. Args, to storage the found items, such as cache entries. Nil if none found
 
+  # return the found cache entry as args
   def get(key)
     if valid_for_retrieval?(key)
       entry = @hash_storage[key]
@@ -33,6 +36,7 @@ class Memcached
     end
   end
 
+  # receives multiple keys and return the cache entry related to each one when found
   def gets(keys)
     entries = Array.new(keys.length)
     found_keys = 0
@@ -58,6 +62,7 @@ class Memcached
     CacheResult.new(found_keys>0, final_message, entries)
   end
 
+  # returns all cache stored, wasn't specified in the protocol
   def get_all
     entries = Array.new()
     found_keys = 0
@@ -74,7 +79,17 @@ class Memcached
     CacheResult.new(found_keys>0, final_message, entries)
   end
 
-  # ---         MEMCACHED STORAGE METHODS          ---
+  def gat
+    ## TODO:
+  end
+
+  def gats
+    ## TODO:
+  end
+
+  # ===================================================
+  # ===     MEMCACHED STORAGE PROTOCOL METHODS      ===
+  # ===================================================
 
   def cas(key, data, flags, exp_time, cas_unique)
     if !exists?(key)
@@ -86,6 +101,9 @@ class Memcached
     end
   end
 
+  # set cache entry with the specified key.
+  # Any cache entry already associated to the key is overwritten
+  # If there's not any cache entry associated, it stores a new one
   def set(key, data, flags, exp_time)
     cas_unique = next_cas_val # get cas value and increment by 1
     entry = CacheData.new(key: key, data: data, flags: flags, exp_time: exp_time, cas_unique: cas_unique)
@@ -93,6 +111,7 @@ class Memcached
     CacheResult.new(true, "#{MESSAGES[:stored]} [key: #{key}, data: #{data}]", entry)
   end
 
+  # if there's no other entry associated to the key, adds it to the storage
   def add(key, data, flags, exp_time)
     if !exists?(key)
       set(key, data, flags, exp_time)
@@ -102,6 +121,7 @@ class Memcached
     end
   end
 
+  # replaces the data stored in a specific key if exists
   def replace(key, data, flags, exp_time)
     if !exists?(key)
       CacheResult.new(success: false, message: MESSAGES[:not_stored])
@@ -110,6 +130,7 @@ class Memcached
     end
   end
 
+  # Adds data to a specific key, after the contained data
   def append(key, data, flags, exp_time)
     if !exists?(key)
       CacheResult.new(success: false, message: MESSAGES[:not_stored])
@@ -119,6 +140,7 @@ class Memcached
     end
   end
 
+  # Adds data to a specific key, before the contained data
   def prepend(key, data, flags, exp_time)
     if !exists?(key)
       CacheResult.new(success: false, message: MESSAGES[:not_stored])
@@ -136,6 +158,7 @@ class Memcached
     ## TODO:
   end
 
+  # Deletes cache entry associated to the specified key if found
   def delete(key)
     if exists? (key)
       remove_entry(key)
@@ -145,6 +168,7 @@ class Memcached
     end
   end
 
+  # deletes all stored cache entries
   def clear_cache
     @hash_storage.clear
     if @hash_storage.length == 0
@@ -154,6 +178,7 @@ class Memcached
     end
   end
 
+  # after specified time, deletes all stored cache entries
   def flush_all(seconds)
       seconds == nil ? sleep(5) : sleep(seconds) # default 5 seconds
       handle_thr = Thread.new {sleep(seconds)}
@@ -162,7 +187,7 @@ class Memcached
   end
 
   # ===================================================
-  # ===            USEFUL METHODS             ===
+  # ===            CACHE STATUS METHODS             ===
   # ===================================================
 
   # returns cas value and increment it by 1
@@ -171,10 +196,6 @@ class Memcached
     @cas_value += 1
     val
   end
-
-  # ===================================================
-  # ===            CACHE STATUS METHODS             ===
-  # ===================================================
 
   # true if hash storage has the specified key stored
   def stored?(key)
@@ -222,6 +243,7 @@ class Memcached
     end
   end
 
+ # Finds & Removes expired cache entries
   def remove_expired_cache
     while @cleaning_cache
       sleep(1) # default 5 seconds
@@ -237,4 +259,4 @@ class Memcached
     end
   end
 
-end
+end # memcaches class

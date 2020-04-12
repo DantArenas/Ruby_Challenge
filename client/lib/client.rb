@@ -29,6 +29,7 @@ class Client
           if @enable_easy_input
             easy_inpu(message) # the following code is just to make easier doing some simple testing
           else
+            puts message
             @socket.puts message # this should be enoguh to send requests to the server
           end
         end
