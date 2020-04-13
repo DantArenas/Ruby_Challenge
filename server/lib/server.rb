@@ -35,14 +35,15 @@ class Server
     loop do
       memcached = Memcached.new # each client has its oun cache storage
       new_client = @tcp_Server.accept # when a new client connects to the server
-      client_handler = ClientHandler.new(id: 'ID: ' + rand(999999).to_s, clientSocket: new_client, memcached: memcached)
+      client_handler_id = rand(999999).to_s
+      client_handler = ClientHandler.new(id: client_handler_id, clientSocket: new_client, memcached: memcached)
       @@clients << client_handler
 
       Thread.start(client_handler) do |handler| # open a new thread for each accepted connection
         # Here we inform the client of the connections. It's human made, so can be removed if not needed
         puts "New connection established! Now #{@@clients.length()} clients :>"
         puts "WAITING FOR REQUESTS"
-        handler.send("Server: Connection established with #{handler.id}")
+        handler.send("Server: Connection established with Client Handler ID: #{client_handler_id}")
         handler.send("Server: You are the client ##{@@clients.length()}")
         handler.send("Server: You may introduce commands now")
         listen_requests(handler) # allow communication

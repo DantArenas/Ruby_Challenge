@@ -8,7 +8,14 @@ class Memcached
 
   MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
   # This messages are not specified by the protocol, but I find them useful
-  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND', error: 'ERROR', success: 'SUCCESS', expired: 'EXPIRED'}
+  MY_MESSAGES = { all_found: 'ALL_FOUND',
+                  only_found: 'ONLY_FOUND',
+                  none_found: 'NONE_FOUND',
+                  error: 'ERROR',
+                  success: 'SUCCESS',
+                  expired: 'EXPIRED',
+                  no_numeric_type: 'NO NUMBER'
+                }
 
   def initialize
     # We'll use Hash so we avoid existing keys entries
@@ -97,9 +104,9 @@ class Memcached
 
   def cas(key, data, flags, exp_time, cas_unique)
     if !exists?(key)
-      CacheResult.new(success: false, message: MESSAGES[:not_found])
+      CacheResult.new(false,  "#{MESSAGES[:not_found]}", nil)
     elsif @hash_storage[key].cas_unique != cas_unique
-      CacheResult.new(success: false, message: MESSAGES[:exists])
+      CacheResult.new(false, "#{MESSAGES[:exists]}", nil)
     else
       set(key, data, flags, exp_time)
     end
@@ -128,7 +135,7 @@ class Memcached
   # replaces the data stored in a specific key if exists
   def replace(key, data, flags, exp_time)
     if !exists?(key)
-      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+      CacheResult.new(false, MESSAGES[:not_stored], nil)
     else
       set(key, data, flags, exp_time)
     end
@@ -137,7 +144,7 @@ class Memcached
   # Adds data to a specific key, after the contained data
   def append(key, data, flags, exp_time)
     if !exists?(key)
-      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+      CacheResult.new(false, MESSAGES[:not_stored], nil)
     else
       current_entry = @hash_storage[key]
       set(key, current_entry.data + data, current_entry.flags, current_entry.exp_time)
@@ -147,19 +154,39 @@ class Memcached
   # Adds data to a specific key, before the contained data
   def prepend(key, data, flags, exp_time)
     if !exists?(key)
-      CacheResult.new(success: false, message: MESSAGES[:not_stored])
+      CacheResult.new(false, MESSAGES[:not_stored], nil)
     else
       current_entry = @hash_storage[key]
       set(key, data + current_entry.data, current_entry.flags, current_entry.exp_time)
     end
   end
 
-  def increment
-    ## TODO:
+  def increment(key, value)
+    if !exists?(key)
+       CacheResult.new(false, MESSAGES[:not_stored], nil)
+    else
+      current_entry = @hash_storage[key]
+      num_data = current_entry.data
+      if !is_unsigned_int?(num_data)
+         CacheResult.new(false,  MY_MESSAGES[:no_numeric_type], nil)
+      end
+      data = num_data.to_i + value.to_i
+      set(key, data, current_entry.flags, current_entry.exp_time)
+    end
   end
 
-  def decrement
-    ## TODO:
+  def decrement(key, value)
+    if !exists?(key)
+       CacheResult.new(false, MESSAGES[:not_stored], nil)
+    else
+      current_entry = @hash_storage[key]
+      num_data = current_entry.data
+      if !is_unsigned_int?(num_data)
+        CacheResult.new(false, MY_MESSAGES[:no_numeric_type], nil)
+      end
+      data = num_data.to_i - value.to_i
+      set(key, data, current_entry.flags, current_entry.exp_time)
+    end
   end
 
   # Deletes cache entry associated to the specified key if found
@@ -214,7 +241,18 @@ class Memcached
   # Use this method when is certain that the cache exists
   # true if isn't null and time elapsed is bigger than expiration time
   def expired?(key)
-    expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now
+    exp_time = @hash_storage[key].exp_time
+    return false if exp_time == 0 # when zero, cache never expires
+    expired = !exp_time.nil? && @hash_storage[key].exp_time <= Time.now
+  end
+
+  def is_unsigned_int?(string)
+    is_integer?(string) && Integer(string) >= 0
+  end
+
+  def is_integer?(string)
+    int_regex = /\A[-+]?\d+\z/
+    int_regex === string
   end
 
   # ===================================================

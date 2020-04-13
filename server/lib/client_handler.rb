@@ -45,7 +45,8 @@ class ClientHandler
       if @command_handler.is_storage?(parsed_command.args[:command])
         data = if message.length >= 2 # data is already sent
                message[1] # we assume data is contained betwen '\r\nDATA\r\n'
-             else # data is missing, ask the client to send the data
+             elsif parsed_command.args[:command] != 'incr' && parsed_command.args[:command] != 'decr'
+               # data is missing, ask the client to send the data
                @client_socket.puts('SEND DATA')
                get_missing_data(@client_socket, parsed_command.args[:bytes])
              end

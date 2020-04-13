@@ -166,16 +166,21 @@ class CommandHandler
 
   # Here we verify the command structure
    def manage_request(args)
-     command = args[:command] # first part must be the command
+     # puts "args is: - #{args} -"
+     if args != nil
+       command = args[:command] # first part must be the command
 
-     if is_retrieval?(command)  # Is Retrieval Request?
-       manage_retrieval(command, args)
-     elsif is_storage?(command) # Is Storage Request?
-       data = args[:data] if args[:data] != nil
-       manage_storage(command, args, data)
-     else                       # Is not a command
-       ## TODO: List the exisiting commands
-       manage_no_command(args[:line]) # the complete line
+       if is_retrieval?(command)  # Is Retrieval Request?
+         return manage_retrieval(command, args)
+       elsif is_storage?(command) # Is Storage Request?
+         data = args[:data] if args[:data] != nil
+         return manage_storage(command, args, data)
+       else                       # Is not a command
+         ## TODO: List the exisiting commands
+         return manage_no_command(args[:line]) # the complete line
+       end
+     else
+       return respond_invalid ("CLIENT_ERROR Could not manage request")
      end
    end
 
@@ -183,8 +188,10 @@ class CommandHandler
     # data.length should fit args.bytes
     # we are beeing very permisive
     ## TODO: bytes length slould fit perfectly the data length
-    unless data.length <= args[:bytes]
-      return CommandResponse.new(true, "#{MESSAGE[:client_error]} Incomplete Data", args)
+    if command != 'incr' && command != 'decr'
+      unless  data != nil && data.length <= args[:bytes]
+        return CommandResponse.new(true, "#{MESSAGE[:client_error]} Incomplete Data", args)
+      end
     end
 
     case command
@@ -207,10 +214,10 @@ class CommandHandler
         result  = @cache.cas(args[:key], args[:data], args[:flags], args[:exp_time], args[:cas_unique])
         args[:noreply] != nil && !args[:noreply] ? result : nil
       when 'incr'
-        ## TODO: increment
+        result  = @cache.increment(args[:key], args[:amaunt])
         args[:noreply] != nil && !args[:noreply] ? result : nil
       when 'decr'
-        ## TODO: decrement
+        result  = @cache.decrement(args[:key], args[:amaunt])
         args[:noreply] != nil && !args[:noreply] ? result : nil
     else
       CommandResponse.new(false, "Soon we'll manage your storage request ==> #{args}", nil)
@@ -268,7 +275,7 @@ class CommandHandler
     results += 'END\n'
 
     final_message = 'MULTI_LINE\r\n' + '\n-' + "#{line}" + '- is not a command\r\n\nAVAILABLE COMMANDS:\r\n' + results
-    CacheResult.new(false, final_message, nil)
+    return CacheResult.new(false, final_message, nil)
   end
 
   def salute # just an EasterEgg, salute protocol between client & server.
@@ -325,6 +332,8 @@ class CommandHandler
     seconds = Integer(time) # time is already validated as unsigned integer
     if seconds > 2592000
       unix_timestamp = Time.at(seconds)
+    elsif seconds == 0
+      ttl = seconds
     else
       ttl = Time.now.to_i + seconds # seconds since epoch + time
       ttl = Time.at(ttl)
