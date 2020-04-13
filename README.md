@@ -48,7 +48,7 @@ Write your command
 ```
 The cliet has some useful methods and shortcuts to make easier for a human user to type commands. For example, the 'add_line_generator', wich sends to the server an 'Add' command, with the specific byte size of the data, so the user doesn't have to guess it. The shortcuts are listed below after the available commands.
 
-To **close** the client connection you can type in the command "*close*" or "*quit*", just like that. If you finish the execution of the client, it will also notify the server, so it can close that connection and free up processing for a new client.
+To **close** the client connection you can type in the command "**_close_**" or "**_quit_**", just like that. If you finish the execution of the client, it will also notify the server, so it can close that connection and free up processing for a new client.
 
 **Note:** when the client execution stops, it will notify the server before shutting down, so you can interrupt the execution at any moment without worries.
 
