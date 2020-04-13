@@ -228,4 +228,3 @@ Here is a list of the following steps of the development:
 3. Send object through server as JSon
 4. Implement Flags
 5. Ensure byte length fits specific data length
-6. Automated Testing
