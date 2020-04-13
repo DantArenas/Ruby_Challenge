@@ -8,7 +8,7 @@ class Memcached
 
   MESSAGES = { stored: 'STORED', not_stored: 'NOT_STORED', exists: 'EXISTS', not_found: 'NOT_FOUND', found: 'FOUND' }.freeze
   # This messages are not specified by the protocol, but I find them useful
-  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND', error: 'ERROR', success: 'SUCCESS'}
+  MY_MESSAGES = { all_found: 'ALL_FOUND', only_found: 'ONLY_FOUND', none_found: 'NONE_FOUND', error: 'ERROR', success: 'SUCCESS', expired: 'EXPIRED'}
 
   def initialize
     # We'll use Hash so we avoid existing keys entries
@@ -28,9 +28,12 @@ class Memcached
 
   # return the found cache entry as args
   def get(key)
-    if valid_for_retrieval?(key)
-      entry = @hash_storage[key]
-      CacheResult.new(true, "#{MESSAGES[:found]} [key: #{key}, data: #{entry.data}]" , entry)
+    cache = @hash_storage[key]
+    if exists?(key) && !cache.nil?
+      CacheResult.new(true, "#{MESSAGES[:found]} [key: #{key}, data: #{cache.data}]" , cache)
+    elsif !cache.nil? && expired?(key)
+      remove_entry(key)
+      CacheResult.new(false, "#{MY_MESSAGES[:expired]} [key: #{key}]", nil)
     else
       CacheResult.new(false, "#{MESSAGES[:not_found]} [key: #{key}]", nil)
     end
@@ -205,24 +208,13 @@ class Memcached
 
   # true if the key is stored and has not expired
   def exists?(key)
-    @hash_storage.key?(key) && (@hash_storage[key].exp_time.nil? || @hash_storage[key].exp_time > Time.now)
+    @hash_storage.key?(key) && !expired?(key)
   end
 
   # Use this method when is certain that the cache exists
   # true if isn't null and time elapsed is bigger than expiration time
   def expired?(key)
-    expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now
-  end
-
-  # Use this method to find if it's a valid key for retrieval
-  def valid_for_retrieval?(key)
-    cache = @hash_storage[key]
-    if exists?(key) && !cache.nil?
-      return true
-    elsif !cache.nil? && expired?(key)
-      remove_entry(key)
-      return false
-    end
+    expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now.to_i
   end
 
   # ===================================================
