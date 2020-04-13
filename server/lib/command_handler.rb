@@ -55,7 +55,8 @@ class CommandHandler
      end
 
      # noreply could be in any of those positions, depending on the command
-     noreply = parts[2] == 'noreply' || parts[4] == 'noreply'  || parts[5] == 'noreply'
+     # Client must assert 'noreply' is well written, otherwise, will be found as false
+     noreply = is_noreply?(parts[2]) || is_noreply?(parts[4]) || is_noreply?(parts[5])
      # true or false. 'noreply' should be the last arg every time
 
      if valid_args_count?(parts, 4, 6) # key + 3 args more + cas + noreply (optional)
@@ -104,19 +105,15 @@ class CommandHandler
     # The commands 'gets' 'flush_all' & 'stats' have a structure that can
     # vary significantly, that's why we analyze it by command case
     if command == 'gets'
-      # gets can have different number of keys. We're expecting 'noreply' before keys
+      # gets can have different number of keys.
       if parts.length > 0
-        noreply = parts[0].include?('noreply')
-        if noreply
-          parts.delete_at(0) # deletes 'noreply', leaving just the keys
-        end
         parts.each do |key| # looks for invalid keys
           unless valid_key?(key)
             return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid key '#{key}'", args)
           end
         end
         # if we get to this point, all keys are valid
-        args = { command: command, noreply: noreply, keys: parts }
+        args = { command: command, keys: parts }
         return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
       else # keys were not sent or error in received data
         return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Missing keys", nil)
@@ -126,7 +123,7 @@ class CommandHandler
         if  flush_time!= nil && !is_unsigned_int?(flush_time)
           return respond_invalid("#{MESSAGE[:client_error]}: Invalid flush time")
         end
-        args = { command: command, seconds: flush_time, noreply: noreply}
+        args = { command: command, seconds: flush_time}
         return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
     elsif command == 'stats'      # stats & stats(flag)
         ## TODO: this hole command is to be implemented yet
@@ -134,28 +131,24 @@ class CommandHandler
         unless stats_flag != nil && stats_flag.length > 0
           return respond_invalid("#{MESSAGE[:client_error]}: Invalid stats flag")
         end
-        args = { command: command, stats_flag: stats_flag, noreply: noreply}
+        args = { command: command, stats_flag: stats_flag}
         return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
     end # parsing 'gets' 'flush_all' & 'stats'
     # if the command was managed before, the code does not reach this point
     # if not, the command is to be managed yet
 
     # this commands don't have data, just the command
-    if valid_args_count?(parts, 0, 1) && (command == 'hello' || command == 'get_all')
-        noreply = false
-        noreply = parts[0] .include?('noreply') if parts.length > 0
-        args    = { command: command, noreply: noreply}
+    if valid_args_count?(parts, 0, 0) && (command == 'hello' || command == 'get_all')
+        args    = { command: command }
         return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
     # this commands have 1 data argument: 'key'
-    elsif valid_args_count?(parts, 1, 2) # get delete
-      noreply = false
-      noreply = parts[1] .include?('noreply') if parts.length > 1
+    elsif valid_args_count?(parts, 1, 1) # get delete
       if command == 'get' || command == 'delete' || command == 'get_all'
         key = parts[0]
         unless key.length> 0 && valid_key?(key)
           return respond_invalid("#{MESSAGE[:client_error]}: Invalid key")
         end
-        args = { command: command, key: key, noreply: noreply}
+        args = { command: command, key: key }
       end
       # at this point, all the known commands have been managed
       return CommandResponse.new(true, "RETRIEVAL_ARGS_OBTAINED", args)
@@ -191,7 +184,7 @@ class CommandHandler
     # we are beeing very permisive
     ## TODO: bytes length slould fit perfectly the data length
     unless data.length <= args[:bytes]
-      return "#{MESSAGE[:client_error]} Incomplete Data"
+      return CommandResponse.new(true, "#{MESSAGE[:client_error]} Incomplete Data", args)
     end
 
     case command
@@ -331,10 +324,10 @@ class CommandHandler
   def generate_TTL(time) # Time To Live
     seconds = Integer(time) # time is already validated as unsigned integer
     if seconds > 2592000
-      ## TODO: Manage the interpretation as a unix timestamp
-      return seconds = 0
+      unix_timestamp = Time.at(seconds)
     else
-      ttl = Time.now.to_i + seconds
+      ttl = Time.now.to_i + seconds # seconds since epoch + time
+      ttl = Time.at(ttl)
       # so de ttl is related to current time since epoch
       return ttl
     end
@@ -349,6 +342,10 @@ class CommandHandler
   def is_integer?(string)
     int_regex = /\A[-+]?\d+\z/
     int_regex === string
+  end
+
+  def is_noreply?(string)
+    string != nil && string == 'noreply'
   end
 
 end# Command Handler Class

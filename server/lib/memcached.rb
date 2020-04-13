@@ -214,7 +214,7 @@ class Memcached
   # Use this method when is certain that the cache exists
   # true if isn't null and time elapsed is bigger than expiration time
   def expired?(key)
-    expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now.to_i
+    expired = !@hash_storage[key].exp_time.nil? && @hash_storage[key].exp_time <= Time.now
   end
 
   # ===================================================
