@@ -21,7 +21,7 @@ Open a Terminal window and change to the **_server/lib_ folder directory**. Then
 
 If server launched ok, you will get this response:
 ```
-  Server Up and Running [PORT: Port Number]
+  Server Up and Running [PORT: 8080]
   WAITING FOR REQUESTS...
 ```
 Each time a new Client is connected to the server, you should get a notification like this:
@@ -67,18 +67,18 @@ Next, a list of all commands available at the moment of this commit. If the user
 -> cas   
 
 **Retrieval Commands**
--> get
--> gets
--> get_all
--> delete
--> flush_all
+-> get   
+-> gets   
+-> get_all   
+-> delete   
+-> flush_all   
 
 **Other Commands**
--> quit
--> close
--> clients
--> server -v
--> hello
+-> quit   
+-> close   
+-> clients   
+-> server -v   
+-> hello   
 
 ### Server Commands
 This commands are handled by the server it self.
