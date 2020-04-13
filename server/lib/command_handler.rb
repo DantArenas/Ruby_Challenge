@@ -332,12 +332,11 @@ class CommandHandler
   def generate_TTL(time) # Time To Live
     seconds = Integer(time) # time is already validated as unsigned integer
     if seconds > 2592000
-      unix_timestamp = Time.at(seconds)
+      unix_timestamp = Time.at(seconds).to_i
     elsif seconds == 0
       ttl = seconds
     else
       ttl = Time.now.to_i + seconds # seconds since epoch + time
-      ttl = Time.at(ttl)
       # so de ttl is related to current time since epoch
       return ttl
     end

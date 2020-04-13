@@ -38,17 +38,17 @@ class Memcached
     cache = @hash_storage[key]
     if exists?(key) && !cache.nil?
       CacheResult.new(true, "#{MESSAGES[:found]} [key: #{key}, data: #{cache.data}]" , cache)
-    elsif !cache.nil? && expired?(key)
+    elsif expired?(key)
       remove_entry(key)
       CacheResult.new(false, "#{MY_MESSAGES[:expired]} [key: #{key}]", nil)
-    else
+    elsif cache == nil
       CacheResult.new(false, "#{MESSAGES[:not_found]} [key: #{key}]", nil)
     end
   end
 
   # receives multiple keys and return the cache entry related to each one when found
   def gets(keys)
-    entries = Array.new(keys.length)
+    entries = Array.new
     found_keys = 0
     results = ''
     keys.each do |key|
@@ -241,9 +241,10 @@ class Memcached
   # Use this method when is certain that the cache exists
   # true if isn't null and time elapsed is bigger than expiration time
   def expired?(key)
+    return true unless @hash_storage[key] != nil
     exp_time = @hash_storage[key].exp_time
     return false if exp_time == 0 # when zero, cache never expires
-    expired = !exp_time.nil? && @hash_storage[key].exp_time <= Time.now
+    expired = !exp_time.nil? && @hash_storage[key].exp_time <= Time.now.to_i
   end
 
   def is_unsigned_int?(string)
