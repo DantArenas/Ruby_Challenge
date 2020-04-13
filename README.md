@@ -57,6 +57,7 @@ To **close** the client connection you can type in the command "**_close_**" or 
 Next, a list of all commands available at the moment of this commit. If the user sends an Invalid command, the server will send a list of all the Valid commands divided in Retrieval and Storage commands.
 
 **Storage Commands**
+
 -> set   
 -> add   
 -> replace   
@@ -67,6 +68,7 @@ Next, a list of all commands available at the moment of this commit. If the user
 -> cas   
 
 **Retrieval Commands**
+
 -> get   
 -> gets   
 -> get_all   
@@ -74,6 +76,7 @@ Next, a list of all commands available at the moment of this commit. If the user
 -> flush_all   
 
 **Other Commands**
+
 -> quit   
 -> close   
 -> clients   
