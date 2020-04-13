@@ -140,7 +140,7 @@ class Memcached
       CacheResult.new(success: false, message: MESSAGES[:not_stored])
     else
       current_entry = @hash_storage[key]
-      set(key, current_entry.data + data, flags, exp_time)
+      set(key, current_entry.data + data, current_entry.flags, current_entry.exp_time)
     end
   end
 
@@ -150,7 +150,7 @@ class Memcached
       CacheResult.new(success: false, message: MESSAGES[:not_stored])
     else
       current_entry = @hash_storage[key]
-      set(key, data + current_entry.data, flags, exp_time)
+      set(key, data + current_entry.data, current_entry.flags, current_entry.exp_time)
     end
   end
 
