@@ -219,6 +219,15 @@ END
 Write your command
 ```
 
+## TESTING
+
+To **Run the Tests** in the Terminal window change to the **_server/test_ folder directory**. Then use the following command line:
+
+```
+ruby -Itest memcached_test.rb
+```
+Should get **32 Tests, 84 Assertions, and 0 problems**
+
 ## TODO
 
 Here is a list of the following steps of the development:
