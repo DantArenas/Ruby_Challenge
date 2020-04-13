@@ -26,6 +26,7 @@ class Client
       Thread.new do
         loop do
           message = $stdin.gets.chomp
+          puts 'Write your command' if message.split("\s").include? 'noreply'
           if @enable_easy_input
             easy_inpu(message) # the following code is just to make easier doing some simple testing
           else
@@ -45,21 +46,21 @@ class Client
     if message == 'add'
       puts 'Write the data u want to send....'
       data = gets.chomp
-      @socket.puts add_line_generator(ttl: 200, data: data)
+      @socket.puts add_line_generator(ttl: 300, data: data) # ttl 300 = 5 minutes
     elsif message == 'cas'
-      @socket.puts use_shortcut('cas 12345 0 180 15 321 noreplay')
+      @socket.puts use_shortcut('cas 12345 0 180 15 321 noreply')
     elsif message == 'tigres'
         @socket.puts use_shortcut('Tres tristes tigres')
     elsif message == 'multi'
-      @socket.puts add_line_generator(key: 123, ttl: 200, data: "Habia una vez")
+      @socket.puts add_line_generator(key: 123, ttl: 300, data: "Habia una vez")
       sleep(0.5) # gives time to server to anwer the each request
-      @socket.puts add_line_generator(key: 456, ttl: 200, data: "una Iguana,")
+      @socket.puts add_line_generator(key: 456, ttl: 300, data: "una Iguana,")
       sleep(0.5) # gives time to server to anwer the each request
-      @socket.puts add_line_generator(key: 789, ttl: 200, data: "con una ruana de lana,")
+      @socket.puts add_line_generator(key: 789, ttl: 300, data: "con una ruana de lana,")
       sleep(0.5) # gives time to server to anwer the each request
-      @socket.puts add_line_generator(key: 101, ttl: 200, data: "peinandose la melena")
+      @socket.puts add_line_generator(key: 101, ttl: 300, data: "peinandose la melena")
       sleep(0.5) # gives time to server to anwer the each request
-      @socket.puts add_line_generator(key: 112, ttl: 200, data: "junto al rio magdalena")
+      @socket.puts add_line_generator(key: 112, ttl: 300, data: "junto al rio magdalena")
       sleep(0.5) # gives time to server to anwer the each request
       @socket.puts use_shortcut('gets 123 456 789 101 112 100 200 300')
       sleep(0.5) # gives time to server to anwer the each request
