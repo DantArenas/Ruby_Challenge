@@ -6,7 +6,7 @@ require_relative './models/command_response.rb'
 class CommandHandler
 
   STORAGE_COMMANDS   = %w[set add replace append prepend incr decr cas].freeze
-  RETRIEVAL_COMMANDS = %w[get gets  get_all delete flush_all stats hello].freeze # quit managed in server requests
+  RETRIEVAL_COMMANDS = %w[get gets get_all delete flush_all stats hello].freeze # quit managed in server requests
   FLAGS              = %w[c f h k l o q s t u v N R Z].freeze ## TODO: implement flags protocol
   STATS              = %w[slabs malloc items detail sizes reset].freeze ## TODO: implement stats retrieval
   MESSAGE            = {error: 'ERROR', client_error: 'CLIENT_ERROR', server_error: 'SERVER_ERROR'}.freeze
@@ -109,7 +109,8 @@ class CommandHandler
       if parts.length > 0
         parts.each do |key| # looks for invalid keys
           unless valid_key?(key)
-            return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid key '#{key}'", args)
+            # return CommandResponse.new(false, "#{MESSAGE[:client_error]}: Invalid key '#{key}'", args)
+            parts.delete(key)
           end
         end
         # if we get to this point, all keys are valid
