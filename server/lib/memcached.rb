@@ -14,7 +14,7 @@ class Memcached
                   error: 'ERROR',
                   success: 'SUCCESS',
                   expired: 'EXPIRED',
-                  no_numeric_type: 'NO NUMBER'
+                  no_numeric_type: 'NO_NUMBER'
                 }
 
   def initialize
@@ -38,11 +38,11 @@ class Memcached
     cache = @hash_storage[key]
     if exists?(key) && !cache.nil?
       CacheResult.new(true, "#{MESSAGES[:found]} [key: #{key}, data: #{cache.data}]" , cache)
+    elsif !exists?(key) && cache.nil?
+      CacheResult.new(false, "#{MESSAGES[:not_found]} [key: #{key}]", nil)
     elsif expired?(key)
       remove_entry(key)
       CacheResult.new(false, "#{MY_MESSAGES[:expired]} [key: #{key}]", nil)
-    elsif cache == nil
-      CacheResult.new(false, "#{MESSAGES[:not_found]} [key: #{key}]", nil)
     end
   end
 
@@ -168,9 +168,9 @@ class Memcached
       current_entry = @hash_storage[key]
       num_data = current_entry.data
       if !is_unsigned_int?(num_data)
-         CacheResult.new(false,  MY_MESSAGES[:no_numeric_type], nil)
+         return CacheResult.new(false,  MY_MESSAGES[:no_numeric_type], nil)
       end
-      data = num_data.to_i + value.to_i
+      data = Integer(num_data) + value.to_i
       set(key, data, current_entry.flags, current_entry.exp_time)
     end
   end
@@ -182,9 +182,9 @@ class Memcached
       current_entry = @hash_storage[key]
       num_data = current_entry.data
       if !is_unsigned_int?(num_data)
-        CacheResult.new(false, MY_MESSAGES[:no_numeric_type], nil)
+         return CacheResult.new(false, MY_MESSAGES[:no_numeric_type], nil)
       end
-      data = num_data.to_i - value.to_i
+      data = Integer(num_data) - value.to_i
       set(key, data, current_entry.flags, current_entry.exp_time)
     end
   end
