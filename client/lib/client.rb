@@ -44,7 +44,7 @@ class Client
   def easy_inpu(message)
     # the following code is just to make easier doing some simple testing
     if message == 'add'
-      puts 'Write the data u want to send....'
+      puts 'Write the data you want to send....'
       data = gets.chomp
       @socket.puts add_line_generator(ttl: 300, data: data) # ttl 300 = 5 minutes
     elsif message == 'cas'
@@ -70,7 +70,7 @@ class Client
   end
 
   def use_shortcut (line)
-    puts "shortcut ussed... sending: #{line} "
+    puts "shortcut used... sending: #{line} "
     return line
   end
 
@@ -120,7 +120,7 @@ class Client
       @socket.puts "I'm fine, thanks! How are you?"
     else
       puts message
-      puts 'Write your command'
+      puts "Write your command\n"
     end
   end
 
