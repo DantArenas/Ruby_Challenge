@@ -36,7 +36,7 @@ With the **Server Running**, open a new Terminal window and change to the **_cli
   ruby client.rb
 ```
 
-If client started ok, you will get this response:
+If the client started ok, you will get this response:
 ```
   Server: Connection established with Client Handler ID: (id)
   Server: You are the client #(number)
@@ -46,7 +46,7 @@ After that, every time you type into the Terminal, you will receive an answer fr
 ```
 Write your command
 ```
-The cliet has some useful methods and shortcuts to make easier for a human user to type commands. For example, the 'add_line_generator', wich sends to the server an 'Add' command, with the specific byte size of the data, so the user doesn't have to guess it. The shortcuts are listed below after the available commands.
+The client has some useful methods and shortcuts to make easier for human users to type in commands. For example, the 'add_line_generator', wich sends to the server an 'Add' command, with the specific byte size of the data, so the user doesn't have to guess it. The shortcuts are listed below, after the available commands.
 
 To **close** the client connection you can type in the command "**_close_**" or "**_quit_**", just like that. If you finish the execution of the client, it will also notify the server, so it can close that connection and free up processing for a new client.
 
@@ -84,15 +84,19 @@ Next, a list of all commands available at the moment of this commit. If the user
 -> hello   
 
 ### Server Commands
-This commands are handled by the server it self.
+This commands are handled by the server itself.
 
 **- Clients (command: "clients"):** Response with the number of clients connected to the server.
+
 **- Server Version (command: "server -v"):** Response with the version of the server.
+
 **- Close (command: "close"):** Notifies and closes communication with the server. Also finishes the client execution.
+
 **- Salute (command: "hello"):** Literally a salute protocol, because of manners matters. Say hello to the server, and it will respond accordingly!
 
 ### Storage & Editing Commands
 This commands store or edit stored data in the server. If the client does not want an answer, can add the argument 'noreply' just before the data.
+
 **Note:** All Storage and Editing methods can receive 'noreply' as an argument. For simplicity purpose, only 'set' and 'add' commands include a 'noreply' example.
 
 **- Set (command: "set"):** Storages data in the specified key. If the key already exists is overwritten.
@@ -178,33 +182,44 @@ delete 123 \r\n # Example
 flush_all \r\n
 ```
 ## Client shortcuts
-This commands are only available in the client class, and ere created to make easier typing commands into the terminal.
+This commands are only available in the client class, and are created to make easier typing commands into the terminal.
 
-**- add:** Creates a default line with the needed args for the 'add' command, with <flags> = 0 and <ttl> = 300. After typing the shortcut 'add', the client service will ask the user to type the data to send. When the user is ready to send the request,  it can use the ENTER key.
+**- add:** Creates a default line with the needed args for the 'add' command, with __*flags*__ = 0 and __*ttl*__ = 300. After typing the shortcut 'add', the client service will ask the user to type the data to send. When the user is ready to send the request,  it can use the ENTER key.
 ```
 add
-Write the data u want to send....
+Write the data you want to send....
 DATA
 # --> Push the ENTER key
 ```
 
-**- tigres:** Types a short phrase: "Tres tristes tigres". Works as a short Lorem Ipsum. It's very useful combined with the 'add' shortcut.
+**- tigres:** Types a short phrase: "Tres tristes tigres". Works as a short **Lorem Ipsum**. It's very useful combined with the 'add' shortcut.
 
 **- multi:** This shortcut sends 5 different 'add' request to the server, with a delay of 0.3 seconds between each one. This gives time to the server for answering each request. After the 'add' commands, a 'gets' command is used to retrieve the information of those 5 specific keys, plus other 3 keys that are not stored. Here is a demo of how it looks like.
 
 ```
 multi
-shortcut ussed... sending: add 123 0 300 13 \r\nHabia una vez\r\n
 
+shortcut used... sending: add 123 0 300 13 \r\nHabia una vez\r\n
 STORED [key: 123, data: Habia una vez]
 Write your command
-shortcut ussed... sending: add 456 0 300 11 \r\nuna Iguana,\r\n
+
+shortcut used... sending: add 456 0 300 11 \r\nuna Iguana,\r\n
 STORED [key: 456, data: una Iguana,]
 Write your command
-shortcut ussed... sending: add 112 0 300 22 \r\njunto al rio magdalena\r\n
+
+shortcut used... sending: add 789 0 300 22 \r\ncon una ruana de lana,\r\n
+STORED [key: 789, data: con una ruana de lana,]
+Write your command
+
+shortcut used... sending: add 101 0 300 20 \r\npeinandose la melena\r\n
+STORED [key: 101, data: peinandose la melena]
+Write your command
+
+shortcut used... sending: add 112 0 300 22 \r\njunto al rio magdalena\r\n
 STORED [key: 112, data: junto al rio magdalena]
 Write your command
-shortcut ussed... sending: gets 123 456 789 101 112 100 200 300
+
+shortcut used... sending: gets 123 456 789 101 112 100 200 300
 
 ONLY_FOUND -----------------
 FOUND [key: 123, data: Habia una vez]
